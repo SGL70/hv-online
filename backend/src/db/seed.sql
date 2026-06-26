@@ -1,10 +1,10 @@
 -- Seed: organisationsträd
 INSERT INTO org_units (id, name, type, parent_id) VALUES
-  (1,  '1. Bataljon',    'bataljon', NULL),
+  (1,  '11. Bataljon',   'bataljon', NULL),
   (9,  'Bataljonsstab',  'stab',     1),
-  (2,  '1. Kompani',     'kompani',  1),
+  (2,  '111. Kompani',   'kompani',  1),
   (10, '1. Kompanistab', 'stab',     2),
-  (3,  '2. Kompani',     'kompani',  1),
+  (3,  '113. Kompani',   'kompani',  1),
   (11, '2. Kompanistab', 'stab',     3),
   (4,  '1. Pluton',      'pluton',   2),
   (5,  '2. Pluton',      'pluton',   2),
