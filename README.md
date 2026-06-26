@@ -45,8 +45,8 @@ Självhostad prototyp av ett digitalt administrativt stödsystem för Hemvärnet
 | `kompc` | Kompanichef | + Attestera rapporter, utrustningsärenden, personalimport |
 | `kvm` | Komp-VKM | Som kompc |
 | `s4` | S4 / Bat-VKM | Som kompc |
-| `batCh` | Bataljonschef | Som kompc |
-| `stab` | Stab | Som kompc |
+| `batc` | Bataljonschef | Som kompc |
+| `s1` | S1 | Som kompc |
 
 Inloggning sker idag via **simulerad BankID** (rollväljare). Autentisering är JWT-baserad och redo för riktig BankID-integration.
 
@@ -56,15 +56,14 @@ Inloggning sker idag via **simulerad BankID** (rollväljare). Autentisering är 
 
 ### Kalender
 - Aktiviteter (övning, utbildning, möte, övrigt) kopplade till org-enhet
-- OSS-svar: Ja / Nej / Kanske per person
+- OSA-svar: Ja / Nej / Kanske, per person
 - Svarssummering visas direkt på aktivitetskortet (✓ / ✗ / ?)
 - Expanderbar deltagarlista grupperad per org-enhet
-- Plutonchef+ kan skapa aktiviteter
+- gruppchef+ kan skapa aktiviteter
 
 ### Redovisningar (Km-ers / Utlägg / SÄVA)
 - **Km-ersättning** — antal kilometer
 - **Utlägg** — belopp + syfte, påminnelse om originalkvitto
-- **Traktamente** — belopp
 - **SÄVA** (Särskild Visstidsanställning) — antal timmar, används för säkerhetsintervjuer, bostadsbesiktningar, förrådsbesök m.m.
 - Fritext-aktivitet ("Övrigt") när ingen kalenderaktivitet finns
 - Godkännandekedja: **Soldat → Plutonchef (granskar) → Kompanichef (attesterar)**
@@ -74,18 +73,18 @@ Inloggning sker idag via **simulerad BankID** (rollväljare). Autentisering är 
 - Badge-notifikation i navigation för väntande ärenden
 
 ### Utrustningshantering
-- Personlig utrustningslista per soldat (kopplar mot materialkatalog)
-- Rapportera förlust eller begära byte
-- Ärendeflöde: soldat → logistik (godkänn/avslå)
+- Personlig utrustningslista per soldat med bilder
+- Rapportera förlust eller begära byte (och ev. beställa transport)
+- Ärendeflöde: soldat → KVM (godkänn/avslå)
 - Förlustblankett (M7102-500360E) genereras för utskrift
-- Kompaniinventering — logistik startar, soldater bekräftar sina artiklar
+- Kompaniinventering — KVM initierar, soldater bekräftar sina artiklar. Inventeringsdatum sparas
 
 ### Organisation
-- Hierarkiskt org-träd: bataljon → kompani → pluton → grupp
-- Stöd för 112. HvKomp-struktur: Chefsgrupp, Stab/TrossPluton, 1–4. Pluton
+- Hierarkiskt org-träd: bataljon → kompani → pluton → Tropp → grupp
+- Stöd för HvKomp-struktur: Chefsgrupp, Stab/TrossPluton, 1–4 Plutoner
 - Import av personal från ODS/XLSX (PRIO-export)
   - Förhandsgranskning med möjlighet att redigera/ta bort rader
-  - Automatisk mappning av stabPluton-kolumn till org-enhet
+  - Automatisk mappning till org-enhet
   - Idempotent (re-import uppdaterar befintliga, skapar inte dubletter)
 - Redigering av enskilda personer (namn, roll, enhet, kontakt)
 
@@ -153,6 +152,7 @@ npm run dev
 - [ ] Befälsplanering / tjänstgöringslista
 - [ ] Dokumenthantering (order, kallelser, instruktioner)
 - [ ] Karta med övningsområden
+- [ ] Skapa transportbeställningar
 
 ### Tekniska förbättringar
 - [ ] Automatiserade tester (backend: Jest + supertest, frontend: Vitest)
@@ -170,7 +170,7 @@ Prototypen är testad i ensam-kompani-läge men datamodell och autentisering är
 
 Idag är org-trädet ett enda träd i databasen. 40 bataljoner i samma träd med delad åtkomstkontroll innebär att en bug i `getSubtreeIds` kan läcka data över bataljonsgränser.
 
-**Lösning:** PostgreSQL Row-Level Security (RLS) med en `battalion_id`-kolumn på alla känsliga tabeller, alternativt separata databasscheman per bataljon. RLS är att föredra — det ger isolering nära datan snarare än i applikationslagret.
+**Lösning:** PostgreSQL Row-Level Security (RLS) med en `battalion_id`-kolumn på alla känsliga tabeller, vilket ger isolering nära datan snarare än i applikationslagret.
 
 ```sql
 -- Exempel: RLS på reports
