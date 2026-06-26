@@ -217,6 +217,24 @@ Klicka på QR-koden i inloggningsvyn för att öppna rollväljaren. Inga löseno
 
 ---
 
+## API-översikt
+
+Alla endpoints ligger under `/api/` och kräver JWT i `Authorization: Bearer`-headern om inget annat anges. Klientsidan finns i `frontend/src/api/client.js`.
+
+| Fil | Prefix | Syfte |
+|-----|--------|-------|
+| `auth.js` | `/api/auth` | Inloggning — mock BankID-bypass och JWT-utfärdning |
+| `activities.js` | `/api/activities` | Kalenderaktiviteter, OSS-svar (ja/nej/kanske) och närvaro |
+| `reports.js` | `/api/reports` | Km-ers / utlägg / SÄVA — skapande, inskickning och godkännandekedja (pc → kompc) |
+| `personal.js` | `/api/personal` | Personalregister — lista, redigera och importera från ODS/XLSX |
+| `equipment.js` | `/api/equipment` | Personlig utrustning, förlust- och bytesärenden |
+| `catalog.js` | `/api/catalog` | Materialkatalog med bilduppladdning (admin) |
+| `inventory.js` | `/api/inventory` | Kompaniinventering — starta, besvara och följa upp |
+| `organizations.js` | `/api/orgs` | Org-träd — CRUD för enheter och medlemskap |
+| `prio.js` | `/api/prio` | Parser och import av PRIO-exportfiler (ODS/XLSX) |
+
+---
+
 ## Skalbarhet — 25 000 användare, 40 bataljoner
 
 Prototypen är testad i ensam-kompani-läge men datamodell och autentisering är designade för att hålla i skala. Nedan beskrivs de tre verkliga problemen och hur de löses.
