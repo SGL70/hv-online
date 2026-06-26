@@ -39,12 +39,32 @@ INSERT INTO equipment (user_id, article_number, name, category, quantity, status
   (1, 'SV-55',  'Sovsäck',         'Bivack', 1, 'ej_mottagen')
 ON CONFLICT DO NOTHING;
 
--- Seed: exempelaktivitet
-INSERT INTO activities (title, description, type, start_time, end_time, created_by, org_unit_id) VALUES
-  ('Skjututbildning', 'Grundläggande skjututbildning för 1. Pluton', 'utbildning',
-   NOW() + INTERVAL '3 days', NOW() + INTERVAL '3 days' + INTERVAL '8 hours', 3, 4),
-  ('Plutonsmöte', 'Veckomöte med genomgång av kommande aktiviteter', 'möte',
-   NOW() + INTERVAL '1 day', NOW() + INTERVAL '1 day' + INTERVAL '1 hour', 3, 4),
-  ('Fältövning GREN', 'Tvådagarsövning i terräng', 'övning',
-   NOW() + INTERVAL '14 days', NOW() + INTERVAL '16 days', 4, 2)
+-- Seed: exempelaktiviteter
+INSERT INTO activities (id, title, description, type, start_time, end_time, created_by, org_unit_id) VALUES
+  (1, 'Plutonsmöte',      'Veckomöte med genomgång av kommande aktiviteter', 'möte',
+   NOW() + INTERVAL '1 day',  NOW() + INTERVAL '1 day'  + INTERVAL '1 hour',  3, 4),
+  (2, 'Skjututbildning',  'Grundläggande skjututbildning för 1. Pluton',     'utbildning',
+   NOW() + INTERVAL '7 days', NOW() + INTERVAL '7 days' + INTERVAL '8 hours', 3, 4),
+  (3, 'Fältövning GREN',  'Tvådagarsövning i terräng, samlingsplats förrådet', 'övning',
+   NOW() + INTERVAL '21 days', NOW() + INTERVAL '23 days', 4, 2)
 ON CONFLICT DO NOTHING;
+
+SELECT setval('activities_id_seq', 10);
+
+-- Seed: OSS-svar (activity_responses) för plutonmötet och skjututbildningen
+-- Användarna 1-3 tillhör pluton/grupp under aktiviteternas org_unit_id=4
+INSERT INTO activity_responses (activity_id, user_id, status) VALUES
+  (1, 1, 'ja'),
+  (1, 2, 'ja'),
+  (1, 3, 'ja'),
+  (2, 1, 'ja'),
+  (2, 2, 'kanske'),
+  (2, 3, 'ja')
+ON CONFLICT DO NOTHING;
+
+-- Seed: exempelredovisning (km-ersättning, utkast)
+INSERT INTO reports (id, user_id, report_type, report_date, km, description, status) VALUES
+  (1, 1, 'km_ers', CURRENT_DATE, 25, 'Förrådsbesök', 'draft')
+ON CONFLICT DO NOTHING;
+
+SELECT setval('reports_id_seq', 10);
