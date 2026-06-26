@@ -174,6 +174,22 @@ cd frontend && npm run dev
 
 Öppna `http://localhost:5173` — klicka på QR-koden för att välja testanvändare.
 
+> **Obs:** Vite proxar `/api`-anrop till `http://localhost:3000`. Backend måste köra på port 3000 för att frontend ska fungera i dev-läge.
+
+### Testanvändare
+
+Klicka på QR-koden i inloggningsvyn för att öppna rollväljaren. Inga lösenord krävs i prototypläge.
+
+| Namn | Personnummer | Roll |
+|------|-------------|------|
+| Erik Andersson | 199001010001 | Soldat |
+| Sara Nilsson | 199001010002 | Gruppchef |
+| Johan Lindqvist | 199001010003 | Plutonchef |
+| Anna Bergström | 199001010004 | Kompanichef |
+| Lars Eriksson | 199001010005 | Komp-VKM |
+| Maria Karlsson | 199001010006 | S4 / Bat-VKM |
+| Peter Svensson | 199001010007 | Bataljonschef |
+
 ---
 
 ## Planerade förbättringar

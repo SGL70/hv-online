@@ -16,6 +16,9 @@ const MOCK_USERS = [
   { id: 7, label: 'Bataljonschef',  name: 'Peter Svensson',  role: 'batCh'  },
 ];
 
+// TODO: Dessa endpoints är öppna i alla miljöer. Inför produktionsdeploy måste de
+// antingen tas bort eller skyddas med t.ex. process.env.NODE_ENV === 'development'.
+
 // GET /api/auth/mock-users — list of prototype users for the role picker
 router.get('/mock-users', (_req, res) => {
   res.json(MOCK_USERS);
