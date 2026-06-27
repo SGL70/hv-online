@@ -14,7 +14,7 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'dev-session-secret',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: process.env.NODE_ENV === 'production' },
+  cookie: { secure: false }, // HTTP ok — byt till true om HTTPS aktiveras
 }));
 
 app.use('/api/auth',        require('./routes/auth'));
