@@ -6,11 +6,13 @@ import { api } from '../api/client';
 export default function Profile() {
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
-  const [email,   setEmail]   = useState(user?.email   || '');
-  const [mobile,  setMobile]  = useState(user?.mobile  || '');
-  const [address, setAddress] = useState(user?.address || '');
-  const [saving,  setSaving]  = useState(false);
-  const [error,   setError]   = useState('');
+  const [email,      setEmail]      = useState(user?.email       || '');
+  const [mobile,     setMobile]     = useState(user?.mobile      || '');
+  const [street,     setStreet]     = useState(user?.street      || '');
+  const [postalCode, setPostalCode] = useState(user?.postal_code || '');
+  const [city,       setCity]       = useState(user?.city        || '');
+  const [saving,     setSaving]     = useState(false);
+  const [error,      setError]      = useState('');
 
   if (!user) return <div className="min-h-screen flex items-center justify-center">Laddar…</div>;
 
@@ -21,7 +23,7 @@ export default function Profile() {
     if (!email || !mobile) { setError('E-post och mobilnummer krävs.'); return; }
     setSaving(true);
     try {
-      await api.saveProfile({ email, mobile, address });
+      await api.saveProfile({ email, mobile, street, postal_code: postalCode, city });
       await refreshUser();
       navigate('/');
     } catch (err) {
@@ -81,14 +83,33 @@ export default function Profile() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Hemadress</label>
-            <textarea
-              value={address} onChange={e => setAddress(e.target.value)}
-              placeholder={"Gatuadress\nPostnummer Ort"}
-              rows={2}
+            <label className="block text-sm font-medium text-gray-700 mb-1">Gatuadress</label>
+            <input
+              type="text" value={street} onChange={e => setStreet(e.target.value)}
+              placeholder="Storgatan 1"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
-                         focus:outline-none focus:ring-2 focus:ring-military-steel resize-none"
+                         focus:outline-none focus:ring-2 focus:ring-military-steel"
             />
+          </div>
+          <div className="flex gap-3">
+            <div className="w-28">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Postnummer</label>
+              <input
+                type="text" value={postalCode} onChange={e => setPostalCode(e.target.value)}
+                placeholder="123 45"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
+                           focus:outline-none focus:ring-2 focus:ring-military-steel"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Ort</label>
+              <input
+                type="text" value={city} onChange={e => setCity(e.target.value)}
+                placeholder="Stockholm"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
+                           focus:outline-none focus:ring-2 focus:ring-military-steel"
+              />
+            </div>
           </div>
           <div className="flex gap-3 pt-1">
             {!isSetup && (
