@@ -58,13 +58,13 @@ router.get('/me', requireAuth, async (req, res) => {
   res.json(result.rows[0]);
 });
 
-// PUT /api/auth/profile — self-service email + mobile
+// PUT /api/auth/profile — self-service contact details
 router.put('/profile', requireAuth, async (req, res) => {
-  const { email, mobile } = req.body;
+  const { email, mobile, address } = req.body;
   const result = await pool.query(
-    `UPDATE users SET email=$1, mobile=$2, profile_complete=TRUE
-     WHERE id=$3 RETURNING *`,
-    [email, mobile, req.user.id]
+    `UPDATE users SET email=$1, mobile=$2, address=$3, profile_complete=TRUE
+     WHERE id=$4 RETURNING *`,
+    [email, mobile, address || null, req.user.id]
   );
   res.json(result.rows[0]);
 });
