@@ -199,11 +199,13 @@ Klicka på QR-koden i inloggningsvyn för att öppna rollväljaren. Inga löseno
 - [ ] E-postnotifieringar vid statusändringar i ärenden
 - [ ] Kalender: kategorisering i Avtalsövningar (KFÖ/SÖF/SÖB), Kompletteringsutbildning och Övrigt
 - [ ] Kalender: SÖB-filtrering per roll (kompc/stf/fanjunkare/kvm)
-- [ ] Exportera redovisningar till PDF/Excel för vidarebefordran till MR-grupp
+- [ ] **Kalender: rikta aktivitet till specifik org-enhet** — idag skapas aktiviteter mot en fast enhet; behöver en enhetsväljarpe (bataljon/kompani/pluton/grupp) så t.ex. ett plutonsmöte bara syns för rätt pluton
+- [ ] **Närvaro­registrering** — grpc och uppåt bokför faktisk närvaro efter genomförd aktivitet (separat från OSS-svar)
+- [ ] **Export km-ers → MR-Grupp HR** — KompC genererar en sammanställning (PDF/Excel) över attesterade km-ers/utlägg/SÄVA för ett givet period och skickar till MR-gruppen
+- [ ] **AFSE PDF-ifyllning** — fyll i AFSE-blanketten programmatiskt baserat på redovisningsdata; KVM anger generella uppgifter (kompanitillhörighet m.m.) en gång så att de förifylls på alla blanketter
 
 ### Funktionella tillägg
 - [ ] Mobilanpassning / PWA (push-notiser)
-- [ ] Närvaro­registrering vid genomförd aktivitet (grpc markerar faktisk närvaro)
 - [ ] Befälsplanering / tjänstgöringslista
 - [ ] Dokumenthantering (order, kallelser, instruktioner)
 - [ ] Karta med övningsområden
