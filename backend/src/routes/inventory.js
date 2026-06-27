@@ -39,6 +39,7 @@ router.get('/last', async (req, res) => {
 
 // POST /api/inventory/start — KVM initiates for their kompani
 router.post('/start', requireLogistics, async (req, res) => {
+  const { deadline } = req.body;
   const scopeId = await getLogisticsScope(req.user);
   const subtree = await getSubtreeIds(scopeId);
 
@@ -70,9 +71,9 @@ router.post('/start', requireLogistics, async (req, res) => {
     );
 
     await pool.query(
-      `INSERT INTO inventories (user_id, org_unit_id, initiated_by)
-       VALUES ($1, $2, $3)`,
-      [m.id, scopeId, req.user.id]
+      `INSERT INTO inventories (user_id, org_unit_id, initiated_by, deadline)
+       VALUES ($1, $2, $3, $4)`,
+      [m.id, scopeId, req.user.id, deadline || null]
     );
   }
 

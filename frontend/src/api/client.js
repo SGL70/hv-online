@@ -75,7 +75,7 @@ export const api = {
   // Inventory
   myInventory:     ()           => api.get('/inventory/mine'),
   lastInventory:   ()           => api.get('/inventory/last'),
-  startInventory:  ()           => api.post('/inventory/start', {}),
+  startInventory:  (deadline)   => api.post('/inventory/start', { deadline: deadline || null }),
   submitInventory: (id, items)  => api.post(`/inventory/${id}/submit`, { items: items || [] }),
   unitInventory:   ()           => api.get('/inventory/unit'),
 

@@ -251,10 +251,15 @@ export default function Equipment() {
           {openInv && !invFormMode && (
             <div className="bg-amber-50 border border-amber-300 rounded-xl px-5 py-4 flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold text-amber-900">Inventering pågår</p>
+                <p className="text-sm font-semibold text-amber-900">Genomför inventering av Personlig materiel</p>
                 <p className="text-xs text-amber-700 mt-0.5">
                   Startad av {openInv.initiated_by_name} · {new Date(openInv.created_at).toLocaleDateString('sv-SE')}
                 </p>
+                {openInv.deadline && (
+                  <p className="text-xs text-amber-800 font-medium mt-0.5">
+                    Klart senast: {new Date(openInv.deadline).toLocaleDateString('sv-SE')}
+                  </p>
+                )}
                 <p className="text-xs text-amber-600 mt-1">
                   Fyll i faktiskt antal för varje artikel. 0 = förlustanmälan skapas automatiskt.
                 </p>

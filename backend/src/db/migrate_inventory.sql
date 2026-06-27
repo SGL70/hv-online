@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS inventories (
   status       TEXT NOT NULL DEFAULT 'open'
                 CHECK (status IN ('open','submitted')),
   created_at   TIMESTAMPTZ DEFAULT NOW(),
-  submitted_at TIMESTAMPTZ
+  submitted_at TIMESTAMPTZ,
+  deadline     DATE
 );
 
 CREATE INDEX IF NOT EXISTS inventories_user_status ON inventories(user_id, status);

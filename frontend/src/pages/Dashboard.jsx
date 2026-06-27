@@ -248,10 +248,15 @@ export default function Dashboard() {
       {openInv && (
         <div className="mb-4 bg-amber-50 border border-amber-300 rounded-xl px-5 py-4 flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-bold text-amber-900">Inventering pågår</p>
+            <p className="text-sm font-bold text-amber-900">Genomför inventering av Personlig materiel</p>
             <p className="text-xs text-amber-700 mt-0.5">
               Startad av {openInv.initiated_by_name} · {new Date(openInv.created_at).toLocaleDateString('sv-SE')}
             </p>
+            {openInv.deadline && (
+              <p className="text-xs text-amber-800 font-medium mt-0.5">
+                Klart senast: {new Date(openInv.deadline).toLocaleDateString('sv-SE')}
+              </p>
+            )}
             <p className="text-xs text-amber-600 mt-1">Gå till Pers. Utrustning och fyll i faktiskt antal för varje artikel.</p>
           </div>
           <button onClick={() => navigate('/utrustning')}

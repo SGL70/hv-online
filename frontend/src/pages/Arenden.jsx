@@ -176,10 +176,15 @@ export default function Arenden() {
   useEffect(load, []);
 
   async function handleStartInventory() {
+    const deadline = prompt('Klart senast (ÅÅÅÅ-MM-DD), lämna tomt för ingen deadline:');
+    if (deadline === null) return; // avbruten
+    if (deadline && !/^\d{4}-\d{2}-\d{2}$/.test(deadline)) {
+      alert('Ogiltigt datumformat. Använd ÅÅÅÅ-MM-DD.'); return;
+    }
     if (!confirm('Starta inventering för hela kompaniet?\n\nAlla soldaters utrustning sätts till OK och de ombeds fylla i faktiskt antal.')) return;
     setStartingInv(true);
     try {
-      const r = await api.startInventory();
+      const r = await api.startInventory(deadline || null);
       alert(`Inventering startad — ${r.started} soldater har fått inventeringsorder.`);
       load();
     } catch (e) { alert(e.message); }
