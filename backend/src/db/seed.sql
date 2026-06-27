@@ -51,7 +51,7 @@ ON CONFLICT DO NOTHING;
 
 SELECT setval('activities_id_seq', 10);
 
--- Seed: OSS-svar (activity_responses) för plutonmötet och skjututbildningen
+-- Seed: OSA-svar (activity_responses) för plutonmötet och skjututbildningen
 -- Användarna 1-3 tillhör pluton/grupp under aktiviteternas org_unit_id=4
 INSERT INTO activity_responses (activity_id, user_id, status) VALUES
   (1, 1, 'ja'),

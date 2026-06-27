@@ -102,7 +102,7 @@ Inloggning sker idag via **simulerad BankID** (rollväljare). Autentisering är 
 org_units          — hierarkiskt träd (id, name, type, parent_id)
 users              — personal (personal_number som nyckel, role, org_unit_id)
 activities         — kalenderaktiviteter
-activity_responses — OSS per person (ja/nej/kanske)
+activity_responses — OSA per person (ja/nej/kanske)
 reports            — km-ers/utlägg/SÄVA (status: draft→submitted→reviewed→approved)
 equipment_templates — materialkatalog
 equipment_items    — personlig utrustning
@@ -200,7 +200,7 @@ Klicka på QR-koden i inloggningsvyn för att öppna rollväljaren. Inga löseno
 - [ ] Kalender: kategorisering i Avtalsövningar (KFÖ/SÖF/SÖB), Kompletteringsutbildning och Övrigt
 - [ ] Kalender: SÖB-filtrering per roll (kompc/stf/fanjunkare/kvm)
 - [ ] **Kalender: rikta aktivitet till specifik org-enhet** — idag skapas aktiviteter mot en fast enhet; behöver en enhetsväljarpe (bataljon/kompani/pluton/grupp) så t.ex. ett plutonsmöte bara syns för rätt pluton
-- [ ] **Närvaro­registrering** — grpc och uppåt bokför faktisk närvaro efter genomförd aktivitet (separat från OSS-svar)
+- [ ] **Närvaro­registrering** — grpc och uppåt bokför faktisk närvaro efter genomförd aktivitet (separat från OSA-svar)
 - [ ] **Export km-ers → MR-Grupp HR** — KompC genererar en sammanställning (PDF/Excel) över attesterade km-ers/utlägg/SÄVA för ett givet period och skickar till MR-gruppen
 - [ ] **AFSE PDF-ifyllning** — fyll i AFSE-blanketten programmatiskt baserat på redovisningsdata; KVM anger generella uppgifter (kompanitillhörighet m.m.) en gång så att de förifylls på alla blanketter
 
@@ -226,7 +226,7 @@ Alla endpoints ligger under `/api/` och kräver JWT i `Authorization: Bearer`-he
 | Fil | Prefix | Syfte |
 |-----|--------|-------|
 | `auth.js` | `/api/auth` | Inloggning — mock BankID-bypass och JWT-utfärdning |
-| `activities.js` | `/api/activities` | Kalenderaktiviteter, OSS-svar (ja/nej/kanske) och närvaro |
+| `activities.js` | `/api/activities` | Kalenderaktiviteter, OSA-svar (ja/nej/kanske) och närvaro |
 | `reports.js` | `/api/reports` | Km-ers / utlägg / SÄVA — skapande, inskickning och godkännandekedja (pc → kompc) |
 | `personal.js` | `/api/personal` | Personalregister — lista, redigera och importera från ODS/XLSX |
 | `equipment.js` | `/api/equipment` | Personlig utrustning, förlust- och bytesärenden |
