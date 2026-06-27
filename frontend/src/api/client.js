@@ -83,6 +83,21 @@ export const api = {
   personalList:   ()         => api.get('/personal'),
   updatePerson:   (id, data) => api.put(`/personal/${id}`, data),
 
+  // News
+  newsList:        ()         => api.get('/news'),
+  createNews:      (data)     => api.post('/news', data),
+  deleteNews:      (id)       => api.delete(`/news/${id}`),
+  uploadNewsImage: (id, file) => {
+    const form = new FormData();
+    form.append('image', file);
+    const token = localStorage.getItem('token');
+    return fetch(`/api/news/${id}/image`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    }).then(r => r.json());
+  },
+
   // PRIO import
   prioParse:  (file) => {
     const form = new FormData();

@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
-import { useNavigate } from 'react-router-dom';
 
 const ROLE_LABELS = {
   soldat:'Soldat', grpc:'Gruppchef', pc:'Plutonchef', toc:'Troppchef',
@@ -29,6 +28,10 @@ function fmt(iso) {
   });
 }
 
+function fmtDate(iso) {
+  return new Date(iso).toLocaleDateString('sv-SE', { day:'numeric', month:'short', year:'numeric' });
+}
+
 function InviteCard({ activity }) {
   const isPast = new Date(activity.start_time) < new Date();
   const resp = activity.my_response;
@@ -46,8 +49,130 @@ function InviteCard({ activity }) {
   );
 }
 
+function CreateNewsModal({ onClose, onCreated }) {
+  const [title, setTitle]   = useState('');
+  const [body, setBody]     = useState('');
+  const [image, setImage]   = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError]   = useState('');
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!title.trim()) { setError('Rubrik krävs'); return; }
+    setSaving(true);
+    try {
+      const post = await api.createNews({ title: title.trim(), body: body.trim() || null });
+      if (image) await api.uploadNewsImage(post.id, image);
+      onCreated();
+      onClose();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
+        <h2 className="text-base font-bold text-military-navy mb-4">Ny nyhet / information</h2>
+        {error && <div className="mb-3 text-sm text-red-600 bg-red-50 p-2 rounded">{error}</div>}
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Rubrik *</label>
+            <input type="text" value={title} onChange={e => setTitle(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-military-steel" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Text</label>
+            <textarea value={body} onChange={e => setBody(e.target.value)} rows={4}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-military-steel resize-none" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Bild (valfritt)</label>
+            <input type="file" accept="image/*" onChange={e => setImage(e.target.files[0] || null)}
+              className="text-sm text-gray-600" />
+          </div>
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose}
+              className="flex-1 border border-gray-300 rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+              Avbryt
+            </button>
+            <button type="submit" disabled={saving}
+              className="flex-1 bg-military-navy text-white rounded-lg py-2 text-sm font-medium hover:bg-military-navy/90 disabled:opacity-50 transition-colors">
+              {saving ? 'Publicerar…' : 'Publicera'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function NewsPanel({ canPost }) {
+  const [posts, setPosts]         = useState([]);
+  const [showCreate, setShowCreate] = useState(false);
+
+  function load() { api.newsList().then(setPosts).catch(() => {}); }
+  useEffect(load, []);
+
+  async function handleDelete(id) {
+    if (!confirm('Ta bort denna nyhet?')) return;
+    await api.deleteNews(id);
+    load();
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          Information / Nyheter
+        </h2>
+        {canPost && (
+          <button onClick={() => setShowCreate(true)}
+            className="text-xs bg-military-navy text-white px-3 py-1 rounded-lg hover:bg-military-navy/90 transition-colors">
+            + Publicera
+          </button>
+        )}
+      </div>
+
+      {posts.length === 0 ? (
+        <div className="rounded-xl border border-gray-200 bg-white px-5 py-8 text-center text-sm text-gray-400">
+          Inga nyheter publicerade
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {posts.map(post => (
+            <div key={post.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              {post.image_path && (
+                <img src={`/img/news/${post.image_path}`} alt=""
+                     className="w-full object-cover max-h-48" />
+              )}
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="text-sm font-semibold text-military-navy leading-tight">{post.title}</h3>
+                  {canPost && (
+                    <button onClick={() => handleDelete(post.id)}
+                      className="shrink-0 text-xs text-gray-300 hover:text-red-500 transition-colors">
+                      ✕
+                    </button>
+                  )}
+                </div>
+                {post.body && <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{post.body}</p>}
+                <p className="text-xs text-gray-400 mt-2">{post.author_name} · {fmtDate(post.created_at)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showCreate && <CreateNewsModal onClose={() => setShowCreate(false)} onCreated={load} />}
+    </div>
+  );
+}
+
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, isLogistics } = useAuth();
   const navigate = useNavigate();
   const [activities, setActivities] = useState([]);
   const [equipment, setEquipment]   = useState([]);
@@ -61,27 +186,17 @@ export default function Dashboard() {
     api.myInventory().then(setOpenInv).catch(() => {});
   }, []);
 
-  const upcoming = activities
-    .filter(a => new Date(a.start_time) > new Date())
-    .slice(0, 4);
-
+  const upcoming = activities.filter(a => new Date(a.start_time) > new Date()).slice(0, 4);
   const issues = equipment.filter(e => e.status !== 'ok');
-
   const pendingReports = reports.filter(r => r.status === 'draft' || r.status === 'submitted');
 
   return (
     <div className="p-6 h-full">
-      {/* Greeting */}
       <div className="mb-4">
-        <h1 className="text-xl font-bold text-military-navy">
-          God dag, {user?.name?.split(' ')[0]}
-        </h1>
-        <p className="text-xs text-gray-400 mt-0.5">
-          {ROLE_LABELS[user?.role]} · {user?.unit_name}
-        </p>
+        <h1 className="text-xl font-bold text-military-navy">God dag, {user?.name?.split(' ')[0]}</h1>
+        <p className="text-xs text-gray-400 mt-0.5">{ROLE_LABELS[user?.role]} · {user?.unit_name}</p>
       </div>
 
-      {/* Inventeringsorder */}
       {openInv && (
         <div className="mb-4 bg-amber-50 border border-amber-300 rounded-xl px-5 py-4 flex items-center justify-between gap-4">
           <div>
@@ -89,9 +204,7 @@ export default function Dashboard() {
             <p className="text-xs text-amber-700 mt-0.5">
               Startad av {openInv.initiated_by_name} · {new Date(openInv.created_at).toLocaleDateString('sv-SE')}
             </p>
-            <p className="text-xs text-amber-600 mt-1">
-              Gå till Pers. Utrustning och fyll i faktiskt antal för varje artikel.
-            </p>
+            <p className="text-xs text-amber-600 mt-1">Gå till Pers. Utrustning och fyll i faktiskt antal för varje artikel.</p>
           </div>
           <button onClick={() => navigate('/utrustning')}
                   className="shrink-0 px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors">
@@ -100,50 +213,35 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Main grid: center content + right sidebar */}
       <div className="flex gap-5">
-
-        {/* Center column */}
-        <div className="flex-1 min-w-0 flex flex-col gap-4">
-
-          {/* Hero image */}
-          <div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm">
-            <img src="/hero.jpg" alt="Verksamhetsbild"
-                 className="w-full object-cover"
-                 style={{ maxHeight: '280px' }} />
-          </div>
-
-          {/* Invitation cards 2×2 */}
+        {/* Left: activities + news side by side */}
+        <div className="flex-1 min-w-0 grid grid-cols-2 gap-5">
+          {/* Aktiviteter */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Kommande aktiviteter
-              </h2>
-              <Link to="/kalender" className="text-xs text-military-steel hover:underline">
-                Visa alla
-              </Link>
+              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Kommande aktiviteter</h2>
+              <Link to="/kalender" className="text-xs text-military-steel hover:underline">Visa alla</Link>
             </div>
             {upcoming.length === 0 ? (
               <div className="rounded-xl border border-gray-200 bg-white px-5 py-8 text-center text-sm text-gray-400">
                 Inga kommande aktiviteter
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-3">
                 {upcoming.map(a => <InviteCard key={a.id} activity={a} />)}
               </div>
             )}
           </div>
+
+          {/* Nyheter */}
+          <NewsPanel canPost={isLogistics()} />
         </div>
 
         {/* Right widget column */}
         <div className="w-52 shrink-0 flex flex-col gap-4">
-
-          {/* Pers. Utrustning */}
           <Link to="/utrustning"
                 className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow block">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Pers. Utrustning
-            </h3>
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Pers. Utrustning</h3>
             {issues.length === 0 ? (
               <p className="text-xs text-green-600">Allt ok</p>
             ) : (
@@ -151,24 +249,17 @@ export default function Dashboard() {
                 {issues.slice(0, 4).map(e => (
                   <li key={e.id} className="flex items-center justify-between gap-1">
                     <span className="text-xs text-gray-700 truncate">{e.name}</span>
-                    <span className={`text-xs shrink-0 ${STATUS_META[e.status]?.color}`}>
-                      {STATUS_META[e.status]?.label}
-                    </span>
+                    <span className={`text-xs shrink-0 ${STATUS_META[e.status]?.color}`}>{STATUS_META[e.status]?.label}</span>
                   </li>
                 ))}
-                {issues.length > 4 && (
-                  <li className="text-xs text-gray-400">+{issues.length - 4} till</li>
-                )}
+                {issues.length > 4 && <li className="text-xs text-gray-400">+{issues.length - 4} till</li>}
               </ul>
             )}
           </Link>
 
-          {/* Kmers/utlägg */}
-          <Link to="/rapporter"
+          <Link to="/arenden"
                 className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow block">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Kmers / Utlägg
-            </h3>
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Kmers / Utlägg</h3>
             {pendingReports.length === 0 ? (
               <p className="text-xs text-gray-400">Inga väntande rapporter</p>
             ) : (
@@ -184,12 +275,9 @@ export default function Dashboard() {
             )}
           </Link>
 
-          {/* Kalender (tall) */}
           <Link to="/kalender"
                 className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow block flex-1">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Kalender
-            </h3>
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Kalender</h3>
             {activities.length === 0 ? (
               <p className="text-xs text-gray-400">Inga aktiviteter</p>
             ) : (
@@ -205,7 +293,6 @@ export default function Dashboard() {
               </ul>
             )}
           </Link>
-
         </div>
       </div>
     </div>

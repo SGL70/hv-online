@@ -19,6 +19,7 @@ app.use('/api/catalog',    require('./routes/catalog'));
 app.use('/api/prio',       require('./routes/prio'));
 app.use('/api/inventory',  require('./routes/inventory'));
 app.use('/api/personal',   require('./routes/personal'));
+app.use('/api/news',       require('./routes/news'));
 
 // Serve uploaded images
 const uploadsPath = path.join(__dirname, '../uploads');
