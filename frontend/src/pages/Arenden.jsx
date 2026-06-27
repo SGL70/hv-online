@@ -147,6 +147,36 @@ function EditReportModal({ report, onClose, onSaved }) {
   );
 }
 
+function StartInventoryModal({ onConfirm, onClose }) {
+  const [deadline, setDeadline] = useState('');
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h2 className="font-semibold text-military-navy">Starta inventering</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg">✕</button>
+        </div>
+        <div className="px-6 py-4 space-y-4">
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">Klart senast (valfritt)</label>
+            <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)}
+                   className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-military-steel" />
+          </div>
+          <p className="text-xs text-gray-400">
+            Alla soldaters utrustning sätts till OK och de ombeds fylla i faktiskt antal.
+          </p>
+          <div className="flex gap-2">
+            <button onClick={onClose} className="btn-secondary flex-1">Avbryt</button>
+            <button onClick={() => onConfirm(deadline || null)} className="btn-primary flex-1">
+              Starta inventering
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Arenden() {
   const { user, hasRole, isLogistics } = useAuth();
   const navigate = useNavigate();
@@ -157,10 +187,14 @@ export default function Arenden() {
   const [approveReports,  setApproveReports]  = useState([]);
   const [approvedHistory, setApprovedHistory] = useState([]);
   const [showHistory,     setShowHistory]     = useState(false);
+  const [showInvModal,    setShowInvModal]    = useState(false);
   const [startingInv,     setStartingInv]     = useState(false);
   const [editingReport,   setEditingReport]   = useState(null);
-  const [returnTarget,    setReturnTarget]    = useState(null);  // { id, comment }
+  const [returnTarget,    setReturnTarget]    = useState(null);
   const [returnComment,   setReturnComment]   = useState('');
+  const [exportFrom,      setExportFrom]      = useState('');
+  const [exportTo,        setExportTo]        = useState('');
+  const [exporting,       setExporting]       = useState(false);
 
   function load() {
     api.reports().then(setMyReports).catch(() => {});
@@ -175,13 +209,8 @@ export default function Arenden() {
 
   useEffect(load, []);
 
-  async function handleStartInventory() {
-    const deadline = prompt('Klart senast (ÅÅÅÅ-MM-DD), lämna tomt för ingen deadline:');
-    if (deadline === null) return; // avbruten
-    if (deadline && !/^\d{4}-\d{2}-\d{2}$/.test(deadline)) {
-      alert('Ogiltigt datumformat. Använd ÅÅÅÅ-MM-DD.'); return;
-    }
-    if (!confirm('Starta inventering för hela kompaniet?\n\nAlla soldaters utrustning sätts till OK och de ombeds fylla i faktiskt antal.')) return;
+  async function handleStartInventory(deadline) {
+    setShowInvModal(false);
     setStartingInv(true);
     try {
       const r = await api.startInventory(deadline || null);
@@ -189,6 +218,13 @@ export default function Arenden() {
       load();
     } catch (e) { alert(e.message); }
     finally { setStartingInv(false); }
+  }
+
+  async function handleExport() {
+    setExporting(true);
+    try { await api.exportReports(exportFrom || undefined, exportTo || undefined); }
+    catch (e) { alert(e.message); }
+    finally { setExporting(false); }
   }
 
   async function decide(caseId, action) {
@@ -351,6 +387,28 @@ export default function Arenden() {
             </div>
           )}
 
+          {/* Export */}
+          <div className="mt-4 bg-white border border-gray-200 rounded-xl px-5 py-4">
+            <p className="text-xs font-semibold text-gray-600 mb-3">Exportera attesterade ersättningar</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <label className="text-xs text-gray-500">Från</label>
+                <input type="date" value={exportFrom} onChange={e => setExportFrom(e.target.value)}
+                       className="border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-military-steel" />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <label className="text-xs text-gray-500">Till</label>
+                <input type="date" value={exportTo} onChange={e => setExportTo(e.target.value)}
+                       className="border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-military-steel" />
+              </div>
+              <button onClick={handleExport} disabled={exporting}
+                      className="btn-primary text-xs disabled:opacity-50">
+                {exporting ? 'Exporterar…' : 'Ladda ner Excel'}
+              </button>
+            </div>
+            <p className="text-xs text-gray-400 mt-2">Lämna datum tomt för att exportera alla.</p>
+          </div>
+
           {/* Historik — attesterade rapporter */}
           {approvedHistory.length > 0 && (
             <div className="mt-3">
@@ -431,7 +489,7 @@ export default function Arenden() {
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-700">Inventering</h2>
-            <button onClick={handleStartInventory} disabled={startingInv} className="btn-primary text-xs">
+            <button onClick={() => setShowInvModal(true)} disabled={startingInv} className="btn-primary text-xs">
               {startingInv ? 'Startar…' : unitInv.length > 0 ? 'Starta om inventering' : 'Starta inventering'}
             </button>
           </div>
@@ -503,6 +561,14 @@ export default function Arenden() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ─── MODAL: starta inventering ──────────────────────────── */}
+      {showInvModal && (
+        <StartInventoryModal
+          onConfirm={handleStartInventory}
+          onClose={() => setShowInvModal(false)}
+        />
       )}
 
       {/* ─── MODAL: redigera rapport ─────────────────────────────── */}

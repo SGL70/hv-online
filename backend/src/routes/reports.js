@@ -1,4 +1,5 @@
 const express = require('express');
+const XLSX = require('xlsx');
 const { pool, getSubtreeIds } = require('../db/index');
 const { requireAuth, requireRole } = require('../middleware/auth');
 
@@ -80,6 +81,55 @@ router.get('/pending-count', async (req, res) => {
     returned: Number(ret.rows[0].count),
     cases:    Number(cas.rows[0].count),
   });
+});
+
+// GET /api/reports/export — Excel-export av attesterade rapporter (kompc+)
+router.get('/export', requireRole('kompc'), async (req, res) => {
+  const { from, to } = req.query;
+  const ids = await getSubtreeIds(req.user.org_unit_id);
+
+  let dateFilter = '';
+  const params = [ids];
+  if (from) { params.push(from); dateFilter += ` AND r.report_date >= $${params.length}`; }
+  if (to)   { params.push(to);   dateFilter += ` AND r.report_date <= $${params.length}`; }
+
+  const result = await pool.query(
+    `SELECT u.name AS namn, u.personal_number AS personnummer,
+            r.report_type AS typ, a.title AS aktivitet, r.description AS beskrivning,
+            r.report_date AS datum, r.km, r.hours AS timmar,
+            r.expenses AS belopp, r.expense_description AS kvitto,
+            r.approved_at AS attesterad
+     FROM reports r
+     JOIN users u ON u.id = r.user_id
+     LEFT JOIN activities a ON a.id = r.activity_id
+     WHERE r.status = 'approved' AND u.org_unit_id = ANY($1)${dateFilter}
+     ORDER BY r.report_date DESC, u.name`,
+    params
+  );
+
+  const TYPE = { km_ers:'Km-ersättning', utlagg:'Utlägg', traktamente:'Traktamente', sava:'SÄVA' };
+  const rows = result.rows.map(r => ({
+    Namn:          r.namn,
+    Personnummer:  r.personnummer,
+    Typ:           TYPE[r.typ] || r.typ,
+    'Aktivitet/Beskrivning': r.aktivitet || r.beskrivning || '',
+    Datum:         (r.datum || '').toString().slice(0, 10),
+    'Km':          r.km > 0 ? Number(r.km) : '',
+    'Timmar':      r.timmar > 0 ? Number(r.timmar) : '',
+    'Belopp (kr)': r.belopp > 0 ? Number(r.belopp) : '',
+    Attesterad:    r.attesterad ? new Date(r.attesterad).toLocaleDateString('sv-SE') : '',
+  }));
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [20,15,16,30,12,6,8,12,12].map(w => ({ wch: w }));
+  XLSX.utils.book_append_sheet(wb, ws, 'Ersättningar');
+
+  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  const filename = `ersattningar${from ? `-${from}` : ''}${to ? `-${to}` : ''}.xlsx`;
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.send(buf);
 });
 
 // POST /api/reports — create

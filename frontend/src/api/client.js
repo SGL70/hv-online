@@ -56,6 +56,22 @@ export const api = {
 
   // Reports
   reports:         (filter)   => api.get(`/reports${filter ? `?filter=${filter}` : ''}`),
+  exportReports:   async (from, to) => {
+    const p = new URLSearchParams();
+    if (from) p.append('from', from);
+    if (to)   p.append('to', to);
+    const res = await fetch(`/api/reports/export?${p}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    });
+    if (!res.ok) throw new Error('Export misslyckades');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ersattningar${from ? `-${from}` : ''}${to ? `-${to}` : ''}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
   pendingCount:    ()         => api.get('/reports/pending-count'),
   createReport:    (data)     => api.post('/reports', data),
   updateReport:    (id, data) => api.put(`/reports/${id}`, data),
