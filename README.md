@@ -2,7 +2,7 @@
 
 Självhostad prototyp av ett digitalt administrativt stödsystem för Hemvärnets kompani- och bataljonsförband. Syftet är att ersätta manuella processer (Excel-listor, pappersblanketter, e-post) med ett modernt webbgränssnitt anpassat för Hemvärnets organisationsstruktur och roller.
 
-> **Status:** Aktiv prototyp — funktionell men inte produktionsklar. Saknar riktig BankID-integration, e-postnotiser och säkerhetshärdning för publikt internet.
+> **Status:** Aktiv prototyp — funktionell men inte produktionsklar. BankID-integration implementerad och testad (se `bankid`-branch). Saknar e-postnotiser och säkerhetshärdning för publikt internet.
 
 ![Hv-webben dashboard](screenshot.png)
 
@@ -50,7 +50,7 @@ Självhostad prototyp av ett digitalt administrativt stödsystem för Hemvärnet
 | `batc` | Bataljonschef | Som kompc |
 | `s1` | S1 | Som kompc |
 
-Inloggning sker idag via **simulerad BankID** (rollväljare). Autentisering är JWT-baserad och redo för riktig BankID-integration.
+Inloggning sker idag via **simulerad BankID** (rollväljare) på `master`. Grenen `bankid` innehåller fullständig BankID-integration via **Idura/Criipto** (OIDC) — testad end-to-end med BankID för fil (Windows) och Mobilt BankID. Kräver Idura production-credentials och HTTPS för produktionsdrift.
 
 ---
 
@@ -195,7 +195,7 @@ Klicka på QR-koden i inloggningsvyn för att öppna rollväljaren. Inga löseno
 ## Planerade förbättringar
 
 ### Nära (prototyp → MVP)
-- [ ] Riktig BankID-integration (Freja eID eller Swedbank Pay BankID-API)
+- [x] **BankID-integration** — implementerad via Idura/Criipto (OIDC) på `bankid`-branch. Testad med BankID för fil och Mobilt BankID. Kräver Idura production-credentials + HTTPS för merge till `master`.
 - [ ] E-postnotifieringar vid statusändringar i ärenden
 - [ ] Kalender: kategorisering i Avtalsövningar (KFÖ/SÖF/SÖB), Kompletteringsutbildning och Övrigt
 - [ ] Kalender: SÖB-filtrering per roll (kompc/stf/fanjunkare/kvm)
@@ -226,6 +226,7 @@ Alla endpoints ligger under `/api/` och kräver JWT i `Authorization: Bearer`-he
 | Fil | Prefix | Syfte |
 |-----|--------|-------|
 | `auth.js` | `/api/auth` | Inloggning — mock BankID-bypass och JWT-utfärdning |
+| `bankid.js` *(branch)* | `/api/auth/bankid` | Riktig BankID via Idura/Criipto OIDC — `/login` och `/callback` |
 | `activities.js` | `/api/activities` | Kalenderaktiviteter, OSA-svar (ja/nej/kanske) och närvaro |
 | `reports.js` | `/api/reports` | Km-ers / utlägg / SÄVA — skapande, inskickning och godkännandekedja (pc → kompc) |
 | `personal.js` | `/api/personal` | Personalregister — lista, redigera och importera från ODS/XLSX |
