@@ -82,11 +82,29 @@ export default function Login() {
   const [showModal, setShowModal]   = useState(false);
   const [mockUsers, setMockUsers]   = useState([]);
   const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState(null);
   const intervalRef                 = useRef(null);
-  const { login }                   = useAuth();
+  const { login, loginWithToken }   = useAuth();
   const navigate                    = useNavigate();
 
   useEffect(() => {
+    // Handle BankID callback: ?token=... or ?error=...
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    const err   = params.get('error');
+    if (token) {
+      loginWithToken(token);
+      navigate('/');
+      return;
+    }
+    if (err) {
+      const messages = {
+        bankid_failed:  'BankID-inloggning misslyckades.',
+        user_not_found: 'Ditt personnummer finns inte registrerat. Kontakta din chef.',
+        auth_failed:    'Tekniskt fel vid inloggning, försök igen.',
+      };
+      setError(messages[err] || 'Okänt fel vid inloggning.');
+    }
     api.mockUsers().then(setMockUsers).catch(() => {});
     startTimer();
     return () => clearInterval(intervalRef.current);
@@ -141,22 +159,27 @@ export default function Login() {
           <p className="text-center text-gray-500 text-sm mt-1">Logga in med BankID</p>
         </div>
 
+        {/* Error message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded px-4 py-3 mb-4 text-center">
+            {error}
+          </div>
+        )}
+
         {/* BankID instruction */}
         <p className="text-center text-gray-500 text-sm mb-7">
           Öppna BankID-appen och skanna QR-koden.
         </p>
 
-        {/* QR Code */}
+        {/* QR Code — klick startar riktigt BankID-flöde */}
         <div className="flex flex-col items-center mb-1">
-          <button
-            onClick={() => !expired && setShowModal(true)}
-            disabled={loading}
-            className={`bg-white p-4 rounded-sm shadow-sm transition-opacity
-                        ${expired ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:shadow-md'}`}
-            title="Klicka för att simulera inloggning (prototyp)"
+          <a
+            href="/api/auth/bankid/login"
+            className={`bg-white p-4 rounded-sm shadow-sm transition-opacity block
+                        ${expired ? 'opacity-30 pointer-events-none' : 'cursor-pointer hover:shadow-md'}`}
           >
             <QRCodeSVG value={FAKE_QR} size={180} />
-          </button>
+          </a>
 
           {/* Progress bar */}
           <div className="w-[212px] mt-1 h-1 bg-gray-200 rounded-full overflow-hidden">
@@ -170,14 +193,9 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Timer / hint */}
+        {/* Timer */}
         <p className="text-center text-sm text-gray-500 mt-2 mb-4">
-          {expired
-            ? 'QR-koden har gått ut'
-            : `${timeLeft} sekunder kvar`}
-        </p>
-        <p className="text-center text-xs text-gray-400 mb-4">
-          Klicka på QR-koden för att simulera inloggning
+          {expired ? 'QR-koden har gått ut' : `${timeLeft} sekunder kvar`}
         </p>
 
         {/* Förläng */}
@@ -193,14 +211,22 @@ export default function Login() {
         <Accordion title="Hjälp med att skanna QR-kod" />
         <Accordion title="För dig som använder speciella hjälpmedel" />
 
-        {/* Open on this device */}
+        {/* Öppna på den här enheten — same-device BankID */}
+        <a
+          href="/api/auth/bankid/login?acr=same-device"
+          className="w-full border border-gray-300 text-[#1d3557] py-3 rounded
+                     hover:bg-gray-50 transition-colors mt-4 text-sm block text-center"
+        >
+          Öppna BankID på den här enheten
+        </a>
+
+        {/* Prototypläge — mock-inloggning för dev */}
         <button
           onClick={() => setShowModal(true)}
           disabled={loading}
-          className="w-full border border-gray-300 text-[#1d3557] py-3 rounded
-                     hover:bg-gray-50 transition-colors mt-4 text-sm"
+          className="w-full text-center text-xs text-gray-300 hover:text-gray-500 mt-4 py-2"
         >
-          Öppna BankID på den här enheten
+          Prototypläge: simulera inloggning
         </button>
       </div>
 

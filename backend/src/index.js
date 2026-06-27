@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const session = require('express-session');
 const helmet = require('helmet');
 const cors = require('cors');
 const path = require('path');
@@ -9,8 +10,15 @@ const app = express();
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
 app.use(express.json());
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'dev-session-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: process.env.NODE_ENV === 'production' },
+}));
 
-app.use('/api/auth',       require('./routes/auth'));
+app.use('/api/auth',        require('./routes/auth'));
+app.use('/api/auth/bankid', require('./routes/bankid'));
 app.use('/api/orgs',       require('./routes/organizations'));
 app.use('/api/activities', require('./routes/activities'));
 app.use('/api/reports',    require('./routes/reports'));
