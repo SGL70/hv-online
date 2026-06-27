@@ -49,14 +49,19 @@ function InviteCard({ activity }) {
   );
 }
 
-function CreateNewsModal({ onClose, onCreated }) {
-  const [title, setTitle]   = useState('');
-  const [body, setBody]     = useState('');
+function NewsModal({ post, onClose, onSaved }) {
+  const isEdit = !!post;
+  const [title, setTitle]   = useState(post?.title || '');
+  const [body,  setBody]    = useState(post?.body  || '');
   const [image, setImage]   = useState(null);
   const [saving, setSaving] = useState(false);
-  const [publishMode, setPublishMode] = useState('now');
-  const [publishAt,   setPublishAt]   = useState('');
-  const [error, setError]   = useState('');
+  const [publishMode, setPublishMode] = useState(
+    post?.publish_at && new Date(post.publish_at) > new Date() ? 'scheduled' : 'now'
+  );
+  const [publishAt, setPublishAt] = useState(
+    post?.publish_at ? new Date(post.publish_at).toISOString().slice(0,16) : ''
+  );
+  const [error, setError] = useState('');
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -65,9 +70,12 @@ function CreateNewsModal({ onClose, onCreated }) {
     setSaving(true);
     try {
       const publish_at = publishMode === 'now' ? null : new Date(publishAt).toISOString();
-      const post = await api.createNews({ title: title.trim(), body: body.trim() || null, publish_at });
-      if (image) await api.uploadNewsImage(post.id, image);
-      onCreated();
+      const data = { title: title.trim(), body: body.trim() || null, publish_at };
+      const saved = isEdit
+        ? await api.updateNews(post.id, data)
+        : await api.createNews(data);
+      if (image) await api.uploadNewsImage(saved.id, image);
+      onSaved();
       onClose();
     } catch (err) {
       setError(err.message);
@@ -79,7 +87,9 @@ function CreateNewsModal({ onClose, onCreated }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
-        <h2 className="text-base font-bold text-military-navy mb-4">Ny nyhet / information</h2>
+        <h2 className="text-base font-bold text-military-navy mb-4">
+          {isEdit ? 'Redigera nyhet' : 'Ny nyhet / information'}
+        </h2>
         {error && <div className="mb-3 text-sm text-red-600 bg-red-50 p-2 rounded">{error}</div>}
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
@@ -93,7 +103,12 @@ function CreateNewsModal({ onClose, onCreated }) {
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-military-steel resize-none" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Bild (valfritt)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {isEdit ? 'Byt bild (valfritt)' : 'Bild (valfritt)'}
+            </label>
+            {isEdit && post.image_path && (
+              <img src={`/img/news/${post.image_path}`} alt="" className="h-16 rounded mb-1 object-cover" />
+            )}
             <input type="file" accept="image/*" onChange={e => setImage(e.target.files[0] || null)}
               className="text-sm text-gray-600" />
           </div>
@@ -123,7 +138,7 @@ function CreateNewsModal({ onClose, onCreated }) {
             </button>
             <button type="submit" disabled={saving}
               className="flex-1 bg-military-navy text-white rounded-lg py-2 text-sm font-medium hover:bg-military-navy/90 disabled:opacity-50 transition-colors">
-              {saving ? 'Sparar…' : publishMode === 'now' ? 'Publicera' : 'Schemalägg'}
+              {saving ? 'Sparar…' : isEdit ? 'Spara' : publishMode === 'now' ? 'Publicera' : 'Schemalägg'}
             </button>
           </div>
         </form>
@@ -133,8 +148,9 @@ function CreateNewsModal({ onClose, onCreated }) {
 }
 
 function NewsPanel({ canPost }) {
-  const [posts, setPosts]         = useState([]);
+  const [posts, setPosts]           = useState([]);
   const [showCreate, setShowCreate] = useState(false);
+  const [editingPost, setEditingPost] = useState(null);
 
   function load() { api.newsList().then(setPosts).catch(() => {}); }
   useEffect(load, []);
@@ -177,11 +193,18 @@ function NewsPanel({ canPost }) {
                 <div className="flex items-center justify-between mt-2">
                   <p className="text-xs text-gray-400">{post.author_name} · {fmtDate(post.created_at)}</p>
                   {canPost && (
-                    <button onClick={() => handleDelete(post.id)}
-                      className="text-xs text-gray-400 hover:text-red-600 border border-gray-200 hover:border-red-300
-                                 rounded px-2 py-0.5 transition-colors">
-                      Ta bort
-                    </button>
+                    <div className="flex gap-2">
+                      <button onClick={() => setEditingPost(post)}
+                        className="text-xs text-gray-400 hover:text-military-navy border border-gray-200 hover:border-gray-400
+                                   rounded px-2 py-0.5 transition-colors">
+                        Redigera
+                      </button>
+                      <button onClick={() => handleDelete(post.id)}
+                        className="text-xs text-gray-400 hover:text-red-600 border border-gray-200 hover:border-red-300
+                                   rounded px-2 py-0.5 transition-colors">
+                        Ta bort
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -190,7 +213,8 @@ function NewsPanel({ canPost }) {
         </div>
       )}
 
-      {showCreate && <CreateNewsModal onClose={() => setShowCreate(false)} onCreated={load} />}
+      {showCreate && <NewsModal onClose={() => setShowCreate(false)} onSaved={load} />}
+      {editingPost && <NewsModal post={editingPost} onClose={() => setEditingPost(null)} onSaved={load} />}
     </div>
   );
 }

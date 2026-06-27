@@ -86,6 +86,7 @@ export const api = {
   // News
   newsList:        ()         => api.get('/news'),
   createNews:      (data)     => api.post('/news', data),
+  updateNews:      (id, data) => api.put(`/news/${id}`, data),
   deleteNews:      (id)       => api.delete(`/news/${id}`),
   uploadNewsImage: (id, file) => {
     const form = new FormData();

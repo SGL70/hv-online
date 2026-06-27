@@ -46,6 +46,19 @@ router.post('/', requireLogistics, async (req, res) => {
   res.status(201).json(result.rows[0]);
 });
 
+// PUT /api/news/:id — update post
+router.put('/:id', requireLogistics, async (req, res) => {
+  const { title, body, publish_at } = req.body;
+  if (!title) return res.status(400).json({ error: 'Rubrik krävs' });
+  const result = await pool.query(
+    `UPDATE news_posts SET title=$1, body=$2, publish_at=$3
+     WHERE id=$4 AND created_by=$5 RETURNING *`,
+    [title, body || null, publish_at || new Date().toISOString(), req.params.id, req.user.id]
+  );
+  if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+  res.json(result.rows[0]);
+});
+
 // POST /api/news/:id/image — upload image for post
 router.post('/:id/image', requireLogistics, upload.single('image'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Ingen fil' });
