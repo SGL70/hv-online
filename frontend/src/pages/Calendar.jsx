@@ -82,9 +82,9 @@ function CreateModal({ onClose, onCreated }) {
             <option value="möte">Möte</option>
             <option value="övrigt">Övrigt</option>
             <optgroup label="Avtalsövningar">
-              <option value="kfö">KFÖ — Kompanifältövning</option>
-              <option value="söf">SÖF — Skjutövning Förband</option>
-              <option value="söb">SÖB — Skjutövning Bataljon</option>
+              <option value="kfö">KFÖ — Krigsförbandsövning</option>
+              <option value="söf">SÖF — Särskild övning förband</option>
+              <option value="söb">SÖB — Särskild övning befäl</option>
             </optgroup>
           </select>
           <select value={form.org_unit_id}

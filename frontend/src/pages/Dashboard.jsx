@@ -286,9 +286,9 @@ export default function Dashboard() {
       {/* Avtalsövningar */}
       <div className="mb-5 grid grid-cols-3 gap-3">
           {[
-            { type:'kfö', label:'KFÖ', sub:'Kompanifältövning' },
-            { type:'söf', label:'SÖF', sub:'Skjutövning Förband' },
-            { type:'söb', label:'SÖB', sub:'Skjutövning Bataljon' },
+            { type:'kfö', label:'KFÖ', sub:'Krigsförbandsövning' },
+            { type:'söf', label:'SÖF', sub:'Särskild övning förband' },
+            { type:'söb', label:'SÖB', sub:'Särskild övning befäl' },
           ].map(({ type, label, sub }) => {
             const a = nextOf(type);
             return (
