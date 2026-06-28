@@ -24,6 +24,7 @@ router.get('/', async (req, res) => {
 
   const result = await pool.query(`
     SELECT a.*, u.name AS created_by_name, o.name AS unit_name,
+           ru.id AS responsible_id, ru.name AS responsible_name, ru.rank AS responsible_rank,
            ar.status AS my_response,
            (SELECT COUNT(*) FROM activity_responses WHERE activity_id=a.id AND status='ja')     AS count_ja,
            (SELECT COUNT(*) FROM activity_responses WHERE activity_id=a.id AND status='nej')    AS count_nej,
@@ -32,6 +33,7 @@ router.get('/', async (req, res) => {
     FROM activities a
     JOIN users u ON u.id = a.created_by
     JOIN org_units o ON o.id = a.org_unit_id
+    LEFT JOIN users ru ON ru.id = a.responsible_id
     LEFT JOIN activity_responses ar ON ar.activity_id = a.id AND ar.user_id = $1
     WHERE a.org_unit_id = ANY($2)
     ORDER BY a.start_time ASC
@@ -41,11 +43,11 @@ router.get('/', async (req, res) => {
 
 // POST /api/activities — create (grpc+)
 router.post('/', requireRole('grpc'), async (req, res) => {
-  const { title, description, type, start_time, end_time, org_unit_id } = req.body;
+  const { title, description, type, start_time, end_time, org_unit_id, responsible_id } = req.body;
   const result = await pool.query(
-    `INSERT INTO activities (title,description,type,start_time,end_time,created_by,org_unit_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-    [title, description, type, start_time, end_time, req.user.id, org_unit_id]
+    `INSERT INTO activities (title,description,type,start_time,end_time,created_by,org_unit_id,responsible_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+    [title, description, type, start_time, end_time, req.user.id, org_unit_id, responsible_id || null]
   );
   const activity = result.rows[0];
 
@@ -102,11 +104,12 @@ router.get('/:id', async (req, res) => {
 
 // PUT /api/activities/:id — redigera aktivitet (grpc+)
 router.put('/:id', requireRole('grpc'), async (req, res) => {
-  const { title, description, type, start_time, end_time, org_unit_id } = req.body;
+  const { title, description, type, start_time, end_time, org_unit_id, responsible_id } = req.body;
   const r = await pool.query(
-    `UPDATE activities SET title=$1,description=$2,type=$3,start_time=$4,end_time=$5,org_unit_id=$6
-     WHERE id=$7 RETURNING *`,
-    [title, description, type, start_time, end_time, org_unit_id, req.params.id]
+    `UPDATE activities SET title=$1,description=$2,type=$3,start_time=$4,end_time=$5,
+                           org_unit_id=$6,responsible_id=$7
+     WHERE id=$8 RETURNING *`,
+    [title, description, type, start_time, end_time, org_unit_id, responsible_id || null, req.params.id]
   );
   if (!r.rows.length) return res.status(404).json({ error: 'Not found' });
   res.json(r.rows[0]);

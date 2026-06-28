@@ -1,0 +1,1 @@
+ALTER TABLE activities ADD COLUMN IF NOT EXISTS responsible_id INTEGER REFERENCES users(id);

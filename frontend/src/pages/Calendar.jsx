@@ -70,18 +70,25 @@ function toLocalDT(iso) {
 function ActivityModal({ activity, onClose, onSaved }) {
   const { user } = useAuth();
   const isEdit = !!activity;
-  const [orgs, setOrgs] = useState([]);
+  const [orgs, setOrgs]       = useState([]);
+  const [members, setMembers] = useState([]);
   const [form, setForm] = useState({
-    title:       activity?.title       || '',
-    description: activity?.description || '',
-    type:        activity?.type        || 'övning',
-    start_time:  activity ? toLocalDT(activity.start_time) : '',
-    end_time:    activity ? toLocalDT(activity.end_time)   : '',
-    org_unit_id: activity?.org_unit_id || user?.org_unit_id || '',
+    title:          activity?.title          || '',
+    description:    activity?.description    || '',
+    type:           activity?.type           || 'övning',
+    start_time:     activity ? toLocalDT(activity.start_time) : '',
+    end_time:       activity ? toLocalDT(activity.end_time)   : '',
+    org_unit_id:    activity?.org_unit_id    || user?.org_unit_id || '',
+    responsible_id: activity?.responsible_id || user?.id || '',
   });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => { api.scopedOrgs().then(setOrgs); }, []);
+
+  useEffect(() => {
+    if (!form.org_unit_id) return;
+    api.unitMembers(form.org_unit_id).then(setMembers).catch(() => {});
+  }, [form.org_unit_id]);
 
   async function submit(e) {
     e.preventDefault();
@@ -130,6 +137,17 @@ function ActivityModal({ activity, onClose, onSaved }) {
                     className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none">
               {buildOrgOptions(orgs).map(o => (
                 <option key={o.id} value={o.id}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">Ansvarig</label>
+            <select value={form.responsible_id}
+                    onChange={e => setForm(f=>({...f,responsible_id:e.target.value}))}
+                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none">
+              <option value="">— Ingen ansvarig —</option>
+              {members.map(m => (
+                <option key={m.id} value={m.id}>{m.name}</option>
               ))}
             </select>
           </div>
@@ -239,7 +257,12 @@ function ActivityCard({ a, responding, onRespond, onEdit, onDelete, canEdit }) {
         </div>
       </div>
       <div className="text-xs text-gray-400 mb-0.5">{fmt(a.start_time)} – {fmt(a.end_time)}</div>
-      <div className="text-xs text-gray-400">{a.unit_name} · {a.created_by_name}</div>
+      <div className="text-xs text-gray-400">
+        {a.unit_name} · {a.created_by_name}
+        {a.responsible_name && (
+          <span className="ml-2 text-military-navy font-medium">Ansvarig: {a.responsible_name}</span>
+        )}
+      </div>
       {a.description && <p className="text-xs text-gray-500 mt-2">{a.description}</p>}
 
       {['kfö','söf','söb'].includes(a.type) ? (
