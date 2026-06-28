@@ -21,6 +21,7 @@ app.use('/api/inventory',  require('./routes/inventory'));
 app.use('/api/personal',   require('./routes/personal'));
 app.use('/api/news',       require('./routes/news'));
 app.use('/api/kvm',        require('./routes/kvm'));
+app.use('/api/docs',       require('./routes/docs'));
 
 // Serve uploaded images (legacy uploads folder)
 const uploadsPath = path.join(__dirname, '../uploads');

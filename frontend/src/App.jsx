@@ -12,6 +12,7 @@ import UnitMembers from './pages/UnitMembers';
 import OrgAdmin    from './pages/OrgAdmin';
 import LossReport  from './pages/LossReport';
 import Arenden     from './pages/Arenden';
+import Documents   from './pages/Documents';
 
 function Protected({ children }) {
   const { user, loading } = useAuth();
@@ -36,6 +37,7 @@ export default function App() {
       <Route path="/arenden" element={<Protected><Arenden /></Protected>} />
       <Route path="/enhet" element={<Protected><UnitMembers /></Protected>} />
       <Route path="/org" element={<Protected><OrgAdmin /></Protected>} />
+      <Route path="/dokument" element={<Protected><Documents /></Protected>} />
       <Route path="/blankett/:id" element={<LossReport />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -157,6 +157,19 @@ export const api = {
     }).then(r => r.json());
   },
 
+  // Dokument
+  docs:       ()        => api.get('/docs'),
+  deleteDoc:  (id)      => api.delete(`/docs/${id}`),
+  docUrl:     (id)      => `/api/docs/${id}/download`,
+  uploadDoc: (formData) => {
+    const token = localStorage.getItem('token');
+    return fetch('/api/docs', {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    }).then(r => r.json().then(d => { if (!r.ok) throw new Error(d.error || 'Fel'); return d; }));
+  },
+
   // KVM-inställningar & AFSE
   kvmSettings:       ()       => api.get('/kvm/settings'),
   saveKvmSettings:   (data)   => api.put('/kvm/settings', data),

@@ -61,6 +61,7 @@ function SidebarContent({ user, pendingBadge, hasRole, isLogistics, onNav, onLog
         <NavItem to="/kalender"   label="Kalender"         icon="📅" onClick={onNav} />
         <NavItem to="/arenden"    label="Ärenden"          icon="📋" badge={pendingBadge} onClick={onNav} />
         <NavItem to="/utrustning" label="Pers. Utrustning" icon="🎒" onClick={onNav} />
+        <NavItem to="/dokument"   label="Dokument"         icon="📁" onClick={onNav} />
         {hasRole('grpc') && (
           <NavItem to="/enhet"    label="Min enhet"        icon="👥" onClick={onNav} />
         )}
