@@ -259,6 +259,11 @@ export default function Arenden() {
     load();
   }
 
+  async function approveAndAfse(caseId) {
+    await api.decideCase(caseId, { action: 'approve' }).catch(e => alert(e.message));
+    navigate(`/blankett/${caseId}`);
+  }
+
   const invOpen      = unitInv.filter(m => m.inv_status === 'open');
   const invSubmitted = unitInv.filter(m => m.inv_status === 'submitted');
   const invNone      = unitInv.filter(m => !m.inv_status);
@@ -517,13 +522,17 @@ export default function Arenden() {
                       {c.description && <div className="text-xs text-gray-500 mt-1 truncate">{c.description}</div>}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      {c.type === 'förlust' && (
-                        <Link to={`/blankett/${c.id}`} className="text-xs text-military-steel hover:underline">Skapa AFSE</Link>
+                      {c.type === 'förlust' ? (
+                        <button onClick={() => approveAndAfse(c.id)}
+                                className="text-xs px-2.5 py-1 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 transition-colors">
+                          Skapa AFSE
+                        </button>
+                      ) : (
+                        <button onClick={() => decide(c.id, 'approve')}
+                                className="text-xs px-2.5 py-1 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 transition-colors">
+                          Godkänn
+                        </button>
                       )}
-                      <button onClick={() => decide(c.id, 'approve')}
-                              className="text-xs px-2.5 py-1 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 transition-colors">
-                        Godkänn
-                      </button>
                       <button onClick={() => decide(c.id, 'reject')}
                               className="text-xs px-2.5 py-1 bg-red-100 text-red-800 rounded-lg hover:bg-red-200 transition-colors">
                         Avslå
