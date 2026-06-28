@@ -22,6 +22,20 @@ const STATUS_META = {
   byte_pågår:    { label:'Byte pågår',    color:'text-blue-600' },
 };
 
+const REPORT_TYPE = { km_ers:'Km-ers', utlagg:'Utlägg', traktamente:'Traktamente', sava:'SÄVA' };
+const REPORT_STATUS = {
+  draft:     { label:'Utkast',    cls:'bg-gray-100 text-gray-500' },
+  submitted: { label:'Inskickad', cls:'bg-blue-100 text-blue-700' },
+  reviewed:  { label:'Granskad',  cls:'bg-yellow-100 text-yellow-700' },
+  returned:  { label:'Avfärdad',  cls:'bg-red-100 text-red-700' },
+  approved:  { label:'Attesterad',cls:'bg-green-100 text-green-700' },
+};
+function reportTitle(r) {
+  const typ = REPORT_TYPE[r.report_type] || r.report_type;
+  const akt = r.activity_title || r.description || '–';
+  return `${typ} | ${akt}`;
+}
+
 function fmt(iso) {
   return new Date(iso).toLocaleDateString('sv-SE', {
     weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'
@@ -321,14 +335,24 @@ export default function Dashboard() {
             {pendingReports.length === 0 ? (
               <p className="text-xs text-gray-400">Inga väntande rapporter</p>
             ) : (
-              <ul className="space-y-1">
-                {pendingReports.slice(0, 3).map(r => (
-                  <li key={r.id} className="text-xs text-gray-700">
-                    {fmtDate(r.report_date)}
-                    {r.km > 0 && <span className="text-gray-400"> · {r.km} km</span>}
-                    {r.expenses > 0 && <span className="text-gray-400"> · {Number(r.expenses).toFixed(0)} kr</span>}
-                  </li>
-                ))}
+              <ul className="space-y-2">
+                {pendingReports.slice(0, 3).map(r => {
+                  const s = REPORT_STATUS[r.status] || REPORT_STATUS.draft;
+                  return (
+                    <li key={r.id} className="text-xs">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-gray-800 font-medium leading-snug">{reportTitle(r)}</span>
+                        <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium ${s.cls}`}>{s.label}</span>
+                      </div>
+                      <div className="text-gray-400 mt-0.5">
+                        {fmtDate(r.report_date)}
+                        {r.km > 0 && <span> · {r.km} km</span>}
+                        {r.expenses > 0 && <span> · {Number(r.expenses).toFixed(0)} kr</span>}
+                        {r.hours > 0 && <span> · {r.hours} tim</span>}
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </Link>
