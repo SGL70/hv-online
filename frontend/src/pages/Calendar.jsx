@@ -80,6 +80,8 @@ function ActivityModal({ activity, onClose, onSaved }) {
     end_time:       activity ? toLocalDT(activity.end_time)   : '',
     org_unit_id:    activity?.org_unit_id    || user?.org_unit_id || '',
     responsible_id: activity?.responsible_id || user?.id || '',
+    location:       activity?.location       || '',
+    equipment:      activity?.equipment      || '',
   });
   const [saving, setSaving] = useState(false);
 
@@ -151,6 +153,12 @@ function ActivityModal({ activity, onClose, onSaved }) {
               ))}
             </select>
           </div>
+          <input placeholder="Plats (valfritt)" value={form.location}
+                 onChange={e => setForm(f=>({...f,location:e.target.value}))}
+                 className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-military-steel" />
+          <textarea placeholder="Utrustning som ska medföras (valfritt)" value={form.equipment}
+                    onChange={e => setForm(f=>({...f,equipment:e.target.value}))} rows={2}
+                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-military-steel" />
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-xs text-gray-500 block mb-1">Start</label>
@@ -269,6 +277,12 @@ function ActivityCard({ a, responding, onRespond, onEdit, onDelete, onAttend, ca
         <div><span className="text-gray-400">Skapad av:</span> {a.created_by_name}</div>
       </div>
       {a.description && <p className="text-xs text-gray-500 mt-2">{a.description}</p>}
+      {(a.location || a.equipment) && (
+        <div className="mt-2 space-y-0.5">
+          {a.location  && <div className="text-xs text-gray-500">📍 {a.location}</div>}
+          {a.equipment && <div className="text-xs text-gray-500">🎒 {a.equipment}</div>}
+        </div>
+      )}
 
       {['kfö','söf','söb'].includes(a.type) ? (
         <div className="mt-2 text-xs text-military-navy font-medium">Avtalsövning</div>

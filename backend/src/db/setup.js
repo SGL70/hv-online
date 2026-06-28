@@ -18,6 +18,7 @@ const files = [
   'migrate_activity_types.sql',
   'migrate_rank.sql',
   'migrate_activity_responsible.sql',
+  'migrate_activity_location.sql',
   'seed.sql',
   'seed_catalog.sql',
 ];

@@ -43,11 +43,11 @@ router.get('/', async (req, res) => {
 
 // POST /api/activities — create (grpc+)
 router.post('/', requireRole('grpc'), async (req, res) => {
-  const { title, description, type, start_time, end_time, org_unit_id, responsible_id } = req.body;
+  const { title, description, type, start_time, end_time, org_unit_id, responsible_id, location, equipment } = req.body;
   const result = await pool.query(
-    `INSERT INTO activities (title,description,type,start_time,end_time,created_by,org_unit_id,responsible_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-    [title, description, type, start_time, end_time, req.user.id, org_unit_id, responsible_id || null]
+    `INSERT INTO activities (title,description,type,start_time,end_time,created_by,org_unit_id,responsible_id,location,equipment)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+    [title, description, type, start_time, end_time, req.user.id, org_unit_id, responsible_id || null, location || null, equipment || null]
   );
   const activity = result.rows[0];
 
@@ -104,12 +104,12 @@ router.get('/:id', async (req, res) => {
 
 // PUT /api/activities/:id — redigera aktivitet (grpc+)
 router.put('/:id', requireRole('grpc'), async (req, res) => {
-  const { title, description, type, start_time, end_time, org_unit_id, responsible_id } = req.body;
+  const { title, description, type, start_time, end_time, org_unit_id, responsible_id, location, equipment } = req.body;
   const r = await pool.query(
     `UPDATE activities SET title=$1,description=$2,type=$3,start_time=$4,end_time=$5,
-                           org_unit_id=$6,responsible_id=$7
-     WHERE id=$8 RETURNING *`,
-    [title, description, type, start_time, end_time, org_unit_id, responsible_id || null, req.params.id]
+                           org_unit_id=$6,responsible_id=$7,location=$8,equipment=$9
+     WHERE id=$10 RETURNING *`,
+    [title, description, type, start_time, end_time, org_unit_id, responsible_id || null, location || null, equipment || null, req.params.id]
   );
   if (!r.rows.length) return res.status(404).json({ error: 'Not found' });
   res.json(r.rows[0]);

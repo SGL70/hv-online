@@ -1,0 +1,2 @@
+ALTER TABLE activities ADD COLUMN IF NOT EXISTS location TEXT;
+ALTER TABLE activities ADD COLUMN IF NOT EXISTS equipment TEXT;
