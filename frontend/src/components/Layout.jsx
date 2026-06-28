@@ -46,12 +46,16 @@ function SidebarContent({ user, pendingBadge, hasRole, isLogistics, onNav, onLog
       </div>
 
       <div className="px-4 py-3 border-b border-white/10 shrink-0">
-        <div className="text-white text-sm font-medium truncate flex items-center gap-1.5">
-          <RankInsignia rank={user?.rank} />
-          {user?.name}
+        <div className="flex items-stretch gap-3">
+          {user?.rank && (
+            <RankInsignia rank={user?.rank} size="sidebar" className="self-stretch" />
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="text-white text-sm font-medium truncate">{user?.name}</div>
+            <div className="text-white/50 text-xs">{ROLE_LABELS[user?.role]}</div>
+            <div className="text-white/30 text-xs truncate">{user?.unit_name}</div>
+          </div>
         </div>
-        <div className="text-white/50 text-xs">{ROLE_LABELS[user?.role]}</div>
-        <div className="text-white/30 text-xs truncate">{user?.unit_name}</div>
         <div className="mt-2 flex flex-col gap-1">
           <NavLink to="/profil" onClick={onNav}
             className="text-xs text-white/50 hover:text-white transition-colors">

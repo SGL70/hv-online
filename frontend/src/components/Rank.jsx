@@ -30,7 +30,7 @@ const RANK_MAP = Object.fromEntries(RANKS.map(r => [r.value, r]));
 export function RankInsignia({ rank, className = '', size = 'sm' }) {
   const r = RANK_MAP[rank];
   if (!r || !r.value) return null;
-  const h = size === 'lg' ? 'h-10' : size === 'md' ? 'h-7' : 'h-5';
+  const h = size === 'sidebar' ? 'h-full' : size === 'lg' ? 'h-10' : size === 'md' ? 'h-7' : 'h-5';
   return (
     <img
       src={`/ranks/${r.value}.jpg`}
