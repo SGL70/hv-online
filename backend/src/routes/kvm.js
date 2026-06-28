@@ -20,15 +20,15 @@ router.get('/settings', requireLogistics, async (req, res) => {
 
 // PUT /api/kvm/settings
 router.put('/settings', requireLogistics, async (req, res) => {
-  const { myndighet, foradsplats, natv_order, kostbadsstalle, transkod, vernr, konto, kloss } = req.body;
+  const { myndighet, materielutlamnare, kvm_initialer, foradsplats, natv_order, kostbadsstalle, transkod, vernr, konto, kloss } = req.body;
   const r = await pool.query(
-    `INSERT INTO kvm_settings (org_unit_id, myndighet, foradsplats, natv_order, kostbadsstalle, transkod, vernr, konto, kloss, updated_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW())
+    `INSERT INTO kvm_settings (org_unit_id, myndighet, materielutlamnare, kvm_initialer, foradsplats, natv_order, kostbadsstalle, transkod, vernr, konto, kloss, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW())
      ON CONFLICT (org_unit_id) DO UPDATE SET
-       myndighet=$2, foradsplats=$3, natv_order=$4, kostbadsstalle=$5,
-       transkod=$6, vernr=$7, konto=$8, kloss=$9, updated_at=NOW()
+       myndighet=$2, materielutlamnare=$3, kvm_initialer=$4, foradsplats=$5,
+       natv_order=$6, kostbadsstalle=$7, transkod=$8, vernr=$9, konto=$10, kloss=$11, updated_at=NOW()
      RETURNING *`,
-    [req.user.org_unit_id, myndighet, foradsplats, natv_order, kostbadsstalle, transkod, vernr, konto, kloss]
+    [req.user.org_unit_id, myndighet, materielutlamnare, kvm_initialer, foradsplats, natv_order, kostbadsstalle, transkod, vernr, konto, kloss]
   );
   res.json(r.rows[0]);
 });
@@ -78,14 +78,16 @@ router.get('/cases/:id/afse', requireLogistics, async (req, res) => {
   };
 
   // KVM-inställningar
-  set('myndighet',      s.myndighet || '');
-  set('foradsplats',    s.foradsplats || '');
-  set('natv order',     s.natv_order || '');
-  set('kostbadsstalle', s.kostbadsstalle || '');
-  set('transkod',       s.transkod || '');
-  set('vernr',          s.vernr || '');
-  set('konto',          s.konto || '');
-  set('kloss',          s.kloss || '');
+  set('myndighet',         s.myndighet || '');
+  set('materielutlamnare', s.materielutlamnare || '');
+  set('301',               s.kvm_initialer || '');
+  set('foradsplats',       s.foradsplats || '');
+  set('natv order',        s.natv_order || '');
+  set('kostbadsstalle',    s.kostbadsstalle || '');
+  set('transkod',          s.transkod || '');
+  set('vernr',             s.vernr || '');
+  set('konto',             s.konto || '');
+  set('kloss',             s.kloss || '');
 
   // Datum
   set('ar',  yyyy);
@@ -95,9 +97,9 @@ router.get('/cases/:id/afse', requireLogistics, async (req, res) => {
   // Soldat
   set('persnr namn', [ec.personal_number, ec.user_name].filter(Boolean).join(' '));
 
-  // Artikel (rad 1)
-  set('foradsbenammning1', ec.equipment_name || '');
-  set('typa',              ec.article_number || '');
+  // Artikel (rad 1): övre rad = förrådsbeteckning (kod), undre rad = förrådsbenämning (namn)
+  set('foradsbenammning1', ec.article_number || '');   // övre rad, kol 1 = artikelkod
+  set('foradsbenamning2',  ec.equipment_name || '');   // undre rad, kol 1 = artikelnamn
   set('antal',             String(ec.quantity || 1));
   set('enhet',             ec.unit || 'ST');
 

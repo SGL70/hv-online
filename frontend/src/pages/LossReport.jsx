@@ -37,14 +37,16 @@ function Section({ title, children }) {
 }
 
 const SETTINGS_FIELDS = [
-  { key: 'myndighet',      label: 'Myndighet/enhet',   num: '1'  },
-  { key: 'foradsplats',    label: 'Förrådsplats',       num: '9'  },
-  { key: 'natv_order',     label: 'Nat-V / Order nr',   num: '—'  },
-  { key: 'kostbadsstalle', label: 'Kostbadsställe',     num: '—'  },
-  { key: 'transkod',       label: 'Transkod',           num: '3'  },
-  { key: 'vernr',          label: 'Verifnr',            num: '4'  },
-  { key: 'konto',          label: 'Konto',              num: '8'  },
-  { key: 'kloss',          label: 'Kloss',              num: '10' },
+  { key: 'myndighet',         label: 'Myndighet/enhet',      num: '1'  },
+  { key: 'materielutlamnare', label: 'Materielutlämnare',    num: '5'  },
+  { key: 'kvm_initialer',     label: 'KVM initialer (sign)', num: '—'  },
+  { key: 'foradsplats',       label: 'Förrådsplats',         num: '9'  },
+  { key: 'natv_order',        label: 'Nat-V / Order nr',     num: '—'  },
+  { key: 'kostbadsstalle',    label: 'Kostbadsställe',       num: '—'  },
+  { key: 'transkod',          label: 'Transkod',             num: '3'  },
+  { key: 'vernr',             label: 'Verifnr',              num: '4'  },
+  { key: 'konto',             label: 'Konto',                num: '8'  },
+  { key: 'kloss',             label: 'Kloss',                num: '10' },
 ];
 
 function KvmSettingsModal({ settings, onSave, onClose }) {
