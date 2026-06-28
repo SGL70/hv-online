@@ -240,7 +240,7 @@ Appen hanterar personuppgifter (namn, adress, telefon, personnummer, tjänstedat
   - SÄVA/km-ersättning: **7 år** (skattemässig preskription — *får ej raderas tidigare*)
   - Utrustningshistorik: hela tjänstgöringstiden
 - [ ] **Integritetspolicy** — sida i appen som beskriver vilka uppgifter som behandlas, varför och hur länge
-- [ ] **Personnummer som nyckel** — bör ersättas med ett internt Hv-ID; personnummer används idag som inloggnings-ID vilket ger onödig exponering
+- [ ] **Personnummer som nyckel** — inom Hemvärnet används personnummer *utan* de fyra sista siffrorna (ÅÅMMDD), vilket inte är unikt — flera soldater kan dela samma värde. Bör ersättas med ett internt unikt Hv-ID (t.ex. ett löpnummer per förband) redan i prototypstadiet
 - [ ] **DPA-avtal** med serverleverantören om appen hostas externt
 
 **Rättslig grund:** troligen *avtal* (Art. 6.1b) via hemvärnsavtalet och/eller *berättigat intresse* (Art. 6.1f). Kontakta Försvarsmaktens juridiska avdelning eller IMY för bekräftelse innan produktionssättning.
