@@ -516,7 +516,7 @@ export default function Arenden() {
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       {c.type === 'förlust' && (
-                        <Link to={`/blankett/${c.id}`} className="text-xs text-military-steel hover:underline">Blankett</Link>
+                        <Link to={`/blankett/${c.id}`} className="text-xs text-military-steel hover:underline">Skapa AFSE</Link>
                       )}
                       <button onClick={() => decide(c.id, 'approve')}
                               className="text-xs px-2.5 py-1 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 transition-colors">

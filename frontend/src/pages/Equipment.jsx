@@ -397,7 +397,7 @@ export default function Equipment() {
                             {i.active_case_id && i.active_case_type === 'förlust' && (
                               <Link to={`/blankett/${i.active_case_id}`}
                                     className="text-xs text-military-steel hover:underline">
-                                Blankett
+                                Skapa AFSE
                               </Link>
                             )}
                           </div>
