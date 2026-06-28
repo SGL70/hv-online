@@ -1,10 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
-
-const TOTAL_SECONDS = 30;
 
 // Fake QR content — looks like real BankID format but is static
 const FAKE_QR = 'bankid.prototype00000000.0.deadbeefcafe0000';
@@ -77,32 +75,15 @@ function RoleModal({ users, onSelect, onClose }) {
 }
 
 export default function Login() {
-  const [timeLeft, setTimeLeft]     = useState(TOTAL_SECONDS);
-  const [expired, setExpired]       = useState(false);
-  const [showModal, setShowModal]   = useState(false);
-  const [mockUsers, setMockUsers]   = useState([]);
-  const [loading, setLoading]       = useState(false);
-  const intervalRef                 = useRef(null);
-  const { login }                   = useAuth();
-  const navigate                    = useNavigate();
+  const [showModal, setShowModal] = useState(false);
+  const [mockUsers, setMockUsers] = useState([]);
+  const [loading, setLoading]     = useState(false);
+  const { login }                 = useAuth();
+  const navigate                  = useNavigate();
 
   useEffect(() => {
     api.mockUsers().then(setMockUsers).catch(() => {});
-    startTimer();
-    return () => clearInterval(intervalRef.current);
   }, []);
-
-  function startTimer() {
-    clearInterval(intervalRef.current);
-    setTimeLeft(TOTAL_SECONDS);
-    setExpired(false);
-    intervalRef.current = setInterval(() => {
-      setTimeLeft(t => {
-        if (t <= 1) { clearInterval(intervalRef.current); setExpired(true); return 0; }
-        return t - 1;
-      });
-    }, 1000);
-  }
 
   async function handleSelectUser(userId) {
     setShowModal(false);
@@ -116,8 +97,6 @@ export default function Login() {
       setLoading(false);
     }
   }
-
-  const progress = (timeLeft / TOTAL_SECONDS) * 100;
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4"
@@ -147,46 +126,19 @@ export default function Login() {
         </p>
 
         {/* QR Code */}
-        <div className="flex flex-col items-center mb-1">
+        <div className="flex flex-col items-center mb-6">
           <button
             onClick={() => setShowModal(true)}
             disabled={loading}
-            className="bg-white p-4 rounded-sm shadow-sm cursor-pointer hover:shadow-md transition-opacity"
+            className="bg-white p-4 rounded-sm shadow-sm cursor-pointer hover:shadow-md transition-shadow"
             title="Klicka för att simulera inloggning (prototyp)"
           >
             <QRCodeSVG value={FAKE_QR} size={180} />
           </button>
-
-          {/* Progress bar */}
-          <div className="w-[212px] mt-1 h-1 bg-gray-200 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-1000"
-              style={{
-                width: `${progress}%`,
-                backgroundColor: expired ? '#e63946' : '#5b9bd5',
-              }}
-            />
-          </div>
+          <p className="text-center text-xs text-gray-400 mt-3">
+            Klicka på QR-koden för att simulera inloggning
+          </p>
         </div>
-
-        {/* Timer / hint */}
-        <p className="text-center text-sm text-gray-500 mt-2 mb-4">
-          {expired
-            ? 'QR-koden har gått ut'
-            : `${timeLeft} sekunder kvar`}
-        </p>
-        <p className="text-center text-xs text-gray-400 mb-4">
-          Klicka på QR-koden för att simulera inloggning
-        </p>
-
-        {/* Förläng */}
-        <button
-          onClick={startTimer}
-          className="w-full bg-[#1d3557] text-white py-3 rounded font-medium
-                     hover:bg-[#16294a] transition-colors mb-6"
-        >
-          Förläng
-        </button>
 
         {/* Accordions */}
         <Accordion title="Hjälp med att skanna QR-kod" />
