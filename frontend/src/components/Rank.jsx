@@ -30,13 +30,16 @@ const RANK_MAP = Object.fromEntries(RANKS.map(r => [r.value, r]));
 export function RankInsignia({ rank, className = '', size = 'sm' }) {
   const r = RANK_MAP[rank];
   if (!r || !r.value) return null;
-  const h = size === 'sidebar' ? 'h-14' : size === 'lg' ? 'h-10' : size === 'md' ? 'h-7' : 'h-5';
+  const cls = size === 'sidebar' ? 'w-7 h-auto'
+            : size === 'lg'      ? 'h-10 w-auto'
+            : size === 'md'      ? 'h-7 w-auto'
+                                 : 'h-5 w-auto';
   return (
     <img
-      src={`/ranks/${r.value}.jpg`}
+      src={`/ranks/${r.value}.png`}
       alt={r.label}
       title={r.label}
-      className={`${h} w-auto shrink-0 ${className}`}
+      className={`${cls} shrink-0 ${className}`}
     />
   );
 }
