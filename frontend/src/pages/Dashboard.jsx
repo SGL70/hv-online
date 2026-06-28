@@ -294,12 +294,11 @@ export default function Dashboard() {
             return (
               <Link key={type} to="/kalender"
                     className="bg-military-navy text-white rounded-xl p-3 hover:bg-military-navy/90 transition-colors">
-                <div className="text-xs font-bold uppercase tracking-wider opacity-70">{label}</div>
-                <div className="text-xs opacity-60 mb-1">{sub}</div>
+                <div className="text-xs font-bold uppercase tracking-wider opacity-70 mb-1">{label} · {sub}</div>
                 {a ? (
                   <>
                     <div className="text-sm font-semibold leading-snug">{a.title}</div>
-                    <div className="text-xs opacity-80 mt-0.5">
+                    <div className="text-xs text-white mt-0.5">
                       {new Date(a.start_time).toLocaleDateString('sv-SE', { day:'numeric', month:'short', year:'numeric' })}
                     </div>
                   </>
