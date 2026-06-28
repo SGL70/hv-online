@@ -228,6 +228,23 @@ Klicka på QR-koden i inloggningsvyn för att öppna rollväljaren. Inga löseno
 - [ ] Multi-kompani-stöd inom samma instans
 - [ ] CI/CD-pipeline
 
+### GDPR — krävs för produktionsdrift
+
+Appen hanterar personuppgifter (namn, adress, telefon, personnummer, tjänstedata). Följande måste implementeras innan skarp drift:
+
+- [ ] **Registerutdrag (Art. 15)** — exportfunktion (PDF/JSON) som samlar all data om en individ: profil, utrustningshistorik, ärenden, SÄVA-redovisningar, km-ersättning och aktivitetssvar
+- [ ] **Rätten att bli glömd (Art. 17)** — anonymiserings­rutin som tar bort personidentifierande uppgifter men bevarar transaktioner (radering är inte alltid möjlig, se nedan)
+- [ ] **Retention-policy och bakgrundsjobb:**
+  - Kontaktuppgifter: aktiv + 1 år efter avslut
+  - Aktivitetssvar: 2 år
+  - SÄVA/km-ersättning: **7 år** (skattemässig preskription — *får ej raderas tidigare*)
+  - Utrustningshistorik: hela tjänstgöringstiden
+- [ ] **Integritetspolicy** — sida i appen som beskriver vilka uppgifter som behandlas, varför och hur länge
+- [ ] **Personnummer som nyckel** — bör ersättas med ett internt Hv-ID; personnummer används idag som inloggnings-ID vilket ger onödig exponering
+- [ ] **DPA-avtal** med serverleverantören om appen hostas externt
+
+**Rättslig grund:** troligen *avtal* (Art. 6.1b) via hemvärnsavtalet och/eller *berättigat intresse* (Art. 6.1f). Kontakta Försvarsmaktens juridiska avdelning eller IMY för bekräftelse innan produktionssättning.
+
 ---
 
 ## API-översikt
