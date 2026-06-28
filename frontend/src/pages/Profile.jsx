@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
+import { RankSelect } from '../components/Rank';
 
 export default function Profile() {
   const { user, refreshUser } = useAuth();
@@ -11,6 +12,7 @@ export default function Profile() {
   const [street,     setStreet]     = useState(user?.street      || '');
   const [postalCode, setPostalCode] = useState(user?.postal_code || '');
   const [city,       setCity]       = useState(user?.city        || '');
+  const [rank,       setRank]       = useState(user?.rank        || '');
   const [saving,     setSaving]     = useState(false);
   const [error,      setError]      = useState('');
 
@@ -23,7 +25,7 @@ export default function Profile() {
     if (!email || !mobile) { setError('E-post och mobilnummer krävs.'); return; }
     setSaving(true);
     try {
-      await api.saveProfile({ email, mobile, street, postal_code: postalCode, city });
+      await api.saveProfile({ email, mobile, street, postal_code: postalCode, city, rank });
       await refreshUser();
       navigate('/');
     } catch (err) {
@@ -110,6 +112,11 @@ export default function Profile() {
                            focus:outline-none focus:ring-2 focus:ring-military-steel"
               />
             </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Grad</label>
+            <RankSelect value={rank} onChange={setRank}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-military-steel" />
           </div>
           <div className="flex gap-3 pt-1">
             {!isSetup && (

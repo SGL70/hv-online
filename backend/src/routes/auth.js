@@ -60,12 +60,12 @@ router.get('/me', requireAuth, async (req, res) => {
 
 // PUT /api/auth/profile — self-service contact details
 router.put('/profile', requireAuth, async (req, res) => {
-  const { email, mobile, street, postal_code, city } = req.body;
+  const { email, mobile, street, postal_code, city, rank } = req.body;
   const result = await pool.query(
     `UPDATE users SET email=$1, mobile=$2, street=$3, postal_code=$4, city=$5,
-                      profile_complete=TRUE
-     WHERE id=$6 RETURNING *`,
-    [email, mobile, street || null, postal_code || null, city || null, req.user.id]
+                      rank=$6, profile_complete=TRUE
+     WHERE id=$7 RETURNING *`,
+    [email, mobile, street || null, postal_code || null, city || null, rank || null, req.user.id]
   );
   res.json(result.rows[0]);
 });

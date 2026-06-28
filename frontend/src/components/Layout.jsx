@@ -6,6 +6,7 @@ import {
   LayoutDashboard, Calendar, ClipboardList, Package,
   FolderOpen, Users, Settings, Menu,
 } from 'lucide-react';
+import { RankInsignia } from './Rank';
 
 const ROLE_LABELS = {
   soldat:'Soldat', grpc:'Gruppchef', pc:'Plutonchef', toc:'Troppchef',
@@ -45,7 +46,10 @@ function SidebarContent({ user, pendingBadge, hasRole, isLogistics, onNav, onLog
       </div>
 
       <div className="px-4 py-3 border-b border-white/10 shrink-0">
-        <div className="text-white text-sm font-medium truncate">{user?.name}</div>
+        <div className="text-white text-sm font-medium truncate flex items-center gap-1.5">
+          <RankInsignia rank={user?.rank} />
+          {user?.name}
+        </div>
         <div className="text-white/50 text-xs">{ROLE_LABELS[user?.role]}</div>
         <div className="text-white/30 text-xs truncate">{user?.unit_name}</div>
         <div className="mt-2 flex flex-col gap-1">

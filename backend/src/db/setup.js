@@ -16,6 +16,7 @@ const files = [
   'migrate_afse_tracking.sql',
   'migrate_docs.sql',
   'migrate_activity_types.sql',
+  'migrate_rank.sql',
   'seed.sql',
   'seed_catalog.sql',
 ];

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import PersonalImport from './PersonalImport';
+import { RankInsignia, RankSelect } from '../components/Rank';
 
 const ROLE_LABELS = {
   soldat:'Soldat', grpc:'Gruppchef', pc:'Plutonchef', toc:'Troppchef',
@@ -31,7 +32,7 @@ function PersonalList() {
 
   function startEdit(p) {
     setEditing(p.id);
-    setDraft({ name: p.name, role: p.role, org_unit_id: p.org_unit_id || '', mobile: p.mobile || '', email: p.email || '' });
+    setDraft({ name: p.name, role: p.role, org_unit_id: p.org_unit_id || '', mobile: p.mobile || '', email: p.email || '', rank: p.rank || '' });
   }
 
   async function save(id) {
@@ -106,10 +107,15 @@ function PersonalList() {
                       <input value={draft.mobile} onChange={e => setDraft(d => ({...d, mobile: e.target.value}))}
                         className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-military-steel" />
                     </div>
-                    <div className="col-span-2">
+                    <div>
                       <label className="text-xs text-gray-500 block mb-1">E-post</label>
                       <input value={draft.email} onChange={e => setDraft(d => ({...d, email: e.target.value}))}
                         className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-military-steel" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">Grad</label>
+                      <RankSelect value={draft.rank} onChange={v => setDraft(d => ({...d, rank: v}))}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none" />
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -122,7 +128,12 @@ function PersonalList() {
               </tr>
             ) : (
               <tr key={p.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => startEdit(p)}>
-                <td className="px-4 py-2 font-medium text-gray-900">{p.name}</td>
+                <td className="px-4 py-2 font-medium text-gray-900">
+                  <span className="flex items-center gap-1.5">
+                    <RankInsignia rank={p.rank} />
+                    {p.name}
+                  </span>
+                </td>
                 <td className="px-4 py-2">
                   <span className={`badge text-xs ${ROLE_COLORS[p.role] || 'bg-gray-100 text-gray-600'}`}>
                     {ROLE_LABELS[p.role] || p.role}
