@@ -75,6 +75,7 @@ export const api = {
   },
   markMr: (ids) => api.post('/reports/mark-mr', { ids }),
   pendingCount:    ()         => api.get('/reports/pending-count'),
+  deleteReport:    (id)       => api.delete(`/reports/${id}`),
   createReport:    (data)     => api.post('/reports', data),
   updateReport:    (id, data) => api.put(`/reports/${id}`, data),
   submitReport:    (id)       => api.post(`/reports/${id}/submit`),

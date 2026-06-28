@@ -289,6 +289,15 @@ export default function Arenden() {
                           </button>
                         </>
                       )}
+                      {['draft', 'submitted', 'returned'].includes(r.status) && (
+                        <button
+                          onClick={() => {
+                            if (confirm('Ta bort ärendet?')) api.deleteReport(r.id).then(load).catch(e => alert(e.message));
+                          }}
+                          className="text-xs px-2.5 py-1 bg-red-50 text-red-600 rounded-lg hover:bg-red-100">
+                          Ta bort
+                        </button>
+                      )}
                       <span className={`badge ${
                         r.status === 'approved'  ? 'bg-green-100 text-green-800' :
                         r.status === 'submitted' ? 'bg-blue-100 text-blue-800' :

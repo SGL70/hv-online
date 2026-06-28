@@ -171,6 +171,16 @@ router.post('/', async (req, res) => {
   res.status(201).json(result.rows[0]);
 });
 
+// DELETE /api/reports/:id — ta bort eget ärende (draft, submitted eller returned)
+router.delete('/:id', async (req, res) => {
+  const result = await pool.query(
+    `DELETE FROM reports WHERE id=$1 AND user_id=$2 AND status IN ('draft','submitted','returned') RETURNING id`,
+    [req.params.id, req.user.id]
+  );
+  if (!result.rows.length) return res.status(403).json({ error: 'Inte tillåtet' });
+  res.json({ ok: true });
+});
+
 // PUT /api/reports/:id — update (own draft or returned)
 router.put('/:id', async (req, res) => {
   const { report_type, hours, km, expenses, expense_description, description, report_date } = req.body;
