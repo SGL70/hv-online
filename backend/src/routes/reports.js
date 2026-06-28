@@ -218,13 +218,12 @@ router.post('/:id/submit', async (req, res) => {
   if (!result.rows.length) return res.status(403).json({ error: 'Not allowed' });
   res.json(result.rows[0]);
 
-  // Notifiera PC i samma pluton
+  // Notifiera PC i föräldraenheten (pluton)
   pool.query(
     `SELECT u.email FROM users u
-     JOIN org_units o ON o.id = u.org_unit_id
-     WHERE u.role IN ('pc','toc') AND o.parent_id = (
-       SELECT parent_id FROM org_units WHERE id = $1
-     ) LIMIT 1`,
+     WHERE u.role IN ('pc','toc')
+     AND u.org_unit_id = (SELECT parent_id FROM org_units WHERE id = $1)
+     LIMIT 1`,
     [req.user.org_unit_id]
   ).then(async pc => {
     if (!pc.rows.length) return;
