@@ -262,6 +262,18 @@ router.post('/:id/review', requireRole('pc'), async (req, res) => {
 });
 
 // POST /api/reports/:id/approve — KompCh attests
+// POST /api/reports/batch-approve — attest multiple reports at once (kompc+)
+router.post('/batch-approve', requireRole('kompc'), async (req, res) => {
+  const { ids } = req.body; // [reportId, ...]
+  if (!Array.isArray(ids) || !ids.length) return res.status(400).json({ error: 'ids required' });
+  const result = await pool.query(
+    `UPDATE reports SET status='approved', approved_by=$1, approved_at=NOW(), updated_at=NOW()
+     WHERE id = ANY($2) AND status='reviewed' RETURNING id`,
+    [req.user.id, ids]
+  );
+  res.json({ approved: result.rows.length });
+});
+
 router.post('/:id/approve', requireRole('kompc'), async (req, res) => {
   const { action } = req.body;
   const newStatus = action === 'approve' ? 'approved' : 'submitted';

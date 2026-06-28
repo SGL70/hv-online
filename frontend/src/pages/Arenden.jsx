@@ -400,31 +400,68 @@ export default function Arenden() {
               Inget att attestera just nu.
             </div>
           ) : (
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-              <ul className="divide-y divide-gray-100">
-                {approveReports.map(r => (
-                  <li key={r.id} className="px-5 py-3 flex items-center justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900">{reportTitle(r)}</div>
-                      <div className="text-xs text-gray-400 mt-0.5">
-                        {r.user_name} · {fmtDate(r.report_date)}
-                        {r.km > 0       && <span className="ml-2">{r.km} km</span>}
-                        {r.expenses > 0 && <span className="ml-2">{Number(r.expenses).toFixed(0)} kr</span>}
-                      </div>
+            <div className="space-y-5">
+              {(() => {
+                const typeKey   = r => r.report_type === 'sava' ? 'sava' : r.expenses > 0 && !r.km ? 'utlagg' : 'km';
+                const typeLabel = { sava: 'SÄVA', km: 'Km-ersättning', utlagg: 'Utlägg' };
+                const typeOrder = ['sava', 'km', 'utlagg'];
+
+                // Build: { typeKey: { actKey: { label, reports[] } } }
+                const byType = {};
+                approveReports.forEach(r => {
+                  const tk = typeKey(r);
+                  const ak = r.activity_id ? `act-${r.activity_id}` : 'other';
+                  if (!byType[tk]) byType[tk] = {};
+                  if (!byType[tk][ak]) byType[tk][ak] = { label: r.activity_title || 'Utan kopplad aktivitet', reports: [] };
+                  byType[tk][ak].reports.push(r);
+                });
+
+                return typeOrder.filter(tk => byType[tk]).map(tk => (
+                  <div key={tk}>
+                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{typeLabel[tk]}</h3>
+                    <div className="space-y-2">
+                      {Object.entries(byType[tk]).map(([ak, g]) => (
+                        <div key={ak} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                          <div className="px-5 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                            <span className="text-xs font-semibold text-gray-600">{g.label} · {g.reports.length} pers</span>
+                            {g.reports.length > 1 && (
+                              <button
+                                onClick={() => api.batchApprove(g.reports.map(r => r.id)).then(load).catch(e => alert(e.message))}
+                                className="text-xs px-2.5 py-1 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 font-medium">
+                                Attestera alla ({g.reports.length})
+                              </button>
+                            )}
+                          </div>
+                          <ul className="divide-y divide-gray-100">
+                            {g.reports.map(r => (
+                              <li key={r.id} className="px-5 py-2.5 flex items-center justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm text-gray-900">{r.user_name}</div>
+                                  <div className="text-xs text-gray-400">
+                                    {fmtDate(r.report_date)}
+                                    {r.km > 0       && <span className="ml-2">{r.km} km</span>}
+                                    {r.expenses > 0 && <span className="ml-2">{Number(r.expenses).toFixed(0)} kr</span>}
+                                  </div>
+                                </div>
+                                <div className="flex gap-2 shrink-0">
+                                  <button onClick={() => api.approveReport(r.id, 'approve').then(load).catch(e => alert(e.message))}
+                                          className="text-xs px-2.5 py-1 bg-green-100 text-green-800 rounded-lg hover:bg-green-200">
+                                    Attestera
+                                  </button>
+                                  <button onClick={() => api.approveReport(r.id, 'return').then(load).catch(e => alert(e.message))}
+                                          className="text-xs px-2.5 py-1 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200">
+                                    Returnera
+                                  </button>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
                     </div>
-                    <div className="flex gap-2 shrink-0">
-                      <button onClick={() => api.approveReport(r.id, 'approve').then(load).catch(e => alert(e.message))}
-                              className="text-xs px-2.5 py-1 bg-green-100 text-green-800 rounded-lg hover:bg-green-200">
-                        Attestera
-                      </button>
-                      <button onClick={() => api.approveReport(r.id, 'return').then(load).catch(e => alert(e.message))}
-                              className="text-xs px-2.5 py-1 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200">
-                        Returnera
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                  </div>
+                ));
+              })()}
             </div>
           )}
 

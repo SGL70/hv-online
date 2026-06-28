@@ -175,8 +175,8 @@ router.post('/:id/report-attendance', requireRole('grpc'), async (req, res) => {
     );
     if (exists.rows.length) return; // already reported
     await pool.query(`
-      INSERT INTO reports (user_id, activity_id, report_date, km, status, report_type, approved_by, approved_at)
-      VALUES ($1,$2,$3,$4,'submitted','km_ers',$5,NOW())
+      INSERT INTO reports (user_id, activity_id, report_date, km, status, report_type, reviewed_by, reviewed_at)
+      VALUES ($1,$2,$3,$4,'reviewed','km_ers',$5,NOW())
     `, [userId, actId, reportDate, km, req.user.id]);
   };
 
