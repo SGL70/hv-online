@@ -194,7 +194,7 @@ function ActivityCard({ a, responding, onRespond }) {
       {a.description && <p className="text-xs text-gray-500 mt-2">{a.description}</p>}
 
       {['kfö','söf','söb'].includes(a.type) ? (
-        <div className="mt-2 text-xs text-military-navy font-medium">Närvaro avtalad</div>
+        <div className="mt-2 text-xs text-military-navy font-medium">Avtalsövning</div>
       ) : (
         <>
           {/* Response counts + expand toggle */}
