@@ -30,7 +30,7 @@ const RANK_MAP = Object.fromEntries(RANKS.map(r => [r.value, r]));
 export function RankInsignia({ rank, className = '', size = 'sm' }) {
   const r = RANK_MAP[rank];
   if (!r || !r.value) return null;
-  const cls = size === 'sidebar' ? 'h-11 w-auto'
+  const cls = size === 'sidebar' ? 'h-12 w-auto'
             : size === 'lg'      ? 'h-10 w-auto'
             : size === 'md'      ? 'h-7 w-auto'
                                  : 'h-5 w-auto';
