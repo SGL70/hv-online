@@ -285,9 +285,9 @@ export default function Dashboard() {
         <img src="/hero.jpg" alt="Verksamhetsbild" className="w-full object-cover" style={{ maxHeight: '220px' }} />
       </div>
 
-      <div className="flex gap-5">
+      <div className="flex flex-col gap-5 lg:flex-row">
         {/* Left: activities + news side by side */}
-        <div className="flex-1 min-w-0 grid grid-cols-2 gap-5">
+        <div className="flex-1 min-w-0 grid grid-cols-1 gap-5 sm:grid-cols-2">
           {/* Aktiviteter */}
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -310,9 +310,9 @@ export default function Dashboard() {
         </div>
 
         {/* Right widget column */}
-        <div className="w-52 shrink-0 flex flex-col gap-4">
+        <div className="flex flex-row flex-wrap gap-4 lg:flex-col lg:w-52 lg:shrink-0">
           <Link to="/utrustning"
-                className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow block">
+                className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow block w-full sm:w-auto sm:flex-1 lg:w-auto lg:flex-none">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Pers. Utrustning</h3>
             {issues.length === 0 ? (
               <p className="text-xs text-green-600">Allt ok</p>
@@ -330,7 +330,7 @@ export default function Dashboard() {
           </Link>
 
           <Link to="/arenden"
-                className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow block">
+                className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow block w-full sm:w-auto sm:flex-1 lg:w-auto lg:flex-none">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Ärenden</h3>
             {pendingReports.length === 0 ? (
               <p className="text-xs text-gray-400">Inga väntande rapporter</p>
@@ -358,7 +358,7 @@ export default function Dashboard() {
           </Link>
 
           <Link to="/kalender"
-                className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow block flex-1">
+                className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow block w-full lg:flex-1">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Kalender</h3>
             {activities.length === 0 ? (
               <p className="text-xs text-gray-400">Inga aktiviteter</p>
