@@ -63,8 +63,12 @@ router.get('/cases/:id/afse', requireLogistics, async (req, res) => {
   const pdf = await PDFDocument.load(pdfBuf);
   const form = pdf.getForm();
 
-  const set = (name, val) => {
-    try { form.getTextField(name).setText(val || ''); } catch {}
+  const set = (name, val, fontSize = 8) => {
+    try {
+      const f = form.getTextField(name);
+      f.setFontSize(fontSize);
+      f.setText(val || '');
+    } catch {}
   };
   const check = (name, on) => {
     try {
