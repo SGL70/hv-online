@@ -149,10 +149,9 @@ export default function Login() {
         {/* QR Code */}
         <div className="flex flex-col items-center mb-1">
           <button
-            onClick={() => !expired && setShowModal(true)}
+            onClick={() => setShowModal(true)}
             disabled={loading}
-            className={`bg-white p-4 rounded-sm shadow-sm transition-opacity
-                        ${expired ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:shadow-md'}`}
+            className="bg-white p-4 rounded-sm shadow-sm cursor-pointer hover:shadow-md transition-opacity"
             title="Klicka för att simulera inloggning (prototyp)"
           >
             <QRCodeSVG value={FAKE_QR} size={180} />
