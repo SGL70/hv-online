@@ -569,7 +569,9 @@ export default function Arenden() {
                 <button
                   disabled={!returnComment.trim()}
                   onClick={() => {
-                    api.reviewReport(returnTarget, 'return', returnComment.trim())
+                    const initials = (user?.name || '').split(' ').map(w => w[0]).join('').toUpperCase();
+                    const comment = returnComment.trim() + (initials ? ` /${initials}` : '');
+                    api.reviewReport(returnTarget, 'return', comment)
                       .then(() => { setReturnTarget(null); load(); })
                       .catch(e => alert(e.message));
                   }}
