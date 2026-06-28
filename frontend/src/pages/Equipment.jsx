@@ -394,11 +394,12 @@ export default function Equipment() {
                                 Anmäl
                               </button>
                             )}
-                            {i.active_case_id && i.active_case_type === 'förlust' && (
-                              <Link to={`/blankett/${i.active_case_id}`}
-                                    className="text-xs text-military-steel hover:underline">
-                                Skapa AFSE
-                              </Link>
+                            {i.active_case_id && i.active_case_type === 'förlust' && i.case_status === 'approved' && (
+                              <button
+                                onClick={() => api.caseReceived(i.active_case_id).then(load).catch(e => alert(e.message))}
+                                className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded hover:bg-green-200 transition-colors">
+                                Kvittera mottagen
+                              </button>
                             )}
                           </div>
                         </li>

@@ -37,8 +37,8 @@ router.get('/my-kit', async (req, res) => {
     LEFT JOIN equipment e
       ON e.user_id = $1 AND e.article_number = t.article_number
     LEFT JOIN LATERAL (
-      SELECT id, type FROM equipment_cases
-      WHERE equipment_id = e.id AND status IN ('pending','pc_review')
+      SELECT id, type, status AS case_status FROM equipment_cases
+      WHERE equipment_id = e.id AND status IN ('pending','pc_review','approved')
       ORDER BY created_at DESC LIMIT 1
     ) ec ON e.id IS NOT NULL
     ORDER BY t.category, t.name
@@ -73,8 +73,8 @@ router.get('/mine', async (req, res) => {
            ec.type AS active_case_type
     FROM equipment e
     LEFT JOIN LATERAL (
-      SELECT id, type FROM equipment_cases
-      WHERE equipment_id = e.id AND status IN ('pending','pc_review')
+      SELECT id, type, status AS case_status FROM equipment_cases
+      WHERE equipment_id = e.id AND status IN ('pending','pc_review','approved')
       ORDER BY created_at DESC LIMIT 1
     ) ec ON true
     WHERE e.user_id = $1
@@ -173,6 +173,28 @@ router.post('/cases', async (req, res) => {
      witnesses || null, agrees_to_compensate ?? null]
   );
   res.status(201).json(result.rows[0]);
+});
+
+// POST /api/equipment/cases/:id/received — soldat kvitterar mottaget ersättningsmateriel
+router.post('/cases/:id/received', async (req, res) => {
+  const c = await pool.query(
+    'SELECT * FROM equipment_cases WHERE id=$1', [req.params.id]
+  );
+  if (!c.rows.length) return res.status(404).json({ error: 'Not found' });
+  const ec = c.rows[0];
+  if (ec.user_id !== req.user.id && !LOGISTICS_ROLES.has(req.user.role)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  await pool.query(
+    `UPDATE equipment_cases SET status='material_received',
+     material_received_at=NOW(), material_received_by=$1 WHERE id=$2`,
+    [req.user.id, req.params.id]
+  );
+  await pool.query(
+    "UPDATE equipment SET status='ok', updated_at=NOW() WHERE id=$1",
+    [ec.equipment_id]
+  );
+  res.json({ ok: true });
 });
 
 // GET /api/equipment/cases — pending cases for my unit (logistics)

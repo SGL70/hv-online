@@ -134,10 +134,49 @@ router.get('/cases/:id/afse', requireLogistics, async (req, res) => {
   form.flatten();
   const outBuf = await pdf.save();
 
+  // Markera att AFSE genererats
+  await pool.query(
+    'UPDATE equipment_cases SET afse_generated_at=NOW() WHERE id=$1',
+    [req.params.id]
+  );
+
   const filename = `afse-${ec.user_name?.replace(/\s+/g, '-') || ec.id}-${yyyy}${mm}${dd}.pdf`;
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
   res.send(Buffer.from(outBuf));
+});
+
+// GET /api/kvm/afse-history — förlustärenden med AFSE-status
+router.get('/afse-history', requireLogistics, async (req, res) => {
+  const { getSubtreeIds } = require('../db/index');
+  const ids = await getSubtreeIds(req.user.org_unit_id);
+  const r = await pool.query(
+    `SELECT ec.id, ec.status, ec.created_at, ec.afse_generated_at, ec.material_received_at,
+            u.name AS user_name, u.personal_number,
+            e.name AS equipment_name, e.article_number,
+            o.name AS unit_name
+     FROM equipment_cases ec
+     JOIN equipment e ON e.id = ec.equipment_id
+     JOIN users u ON u.id = ec.user_id
+     JOIN org_units o ON o.id = u.org_unit_id
+     WHERE ec.type = 'förlust' AND u.org_unit_id = ANY($1)
+     ORDER BY ec.created_at DESC`,
+    [ids]
+  );
+  res.json(r.rows);
+});
+
+// POST /api/kvm/cases/:id/material-received — KVM bekräftar mottaget ersättningsmateriel
+router.post('/cases/:id/material-received', requireLogistics, async (req, res) => {
+  await pool.query(
+    'UPDATE equipment_cases SET material_received_at=NOW(), material_received_by=$1 WHERE id=$2',
+    [req.user.id, req.params.id]
+  );
+  await pool.query(
+    "UPDATE equipment SET status='ok', updated_at=NOW() WHERE id=(SELECT equipment_id FROM equipment_cases WHERE id=$1)",
+    [req.params.id]
+  );
+  res.json({ ok: true });
 });
 
 module.exports = router;

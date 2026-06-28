@@ -206,6 +206,7 @@ export default function Arenden() {
   const navigate = useNavigate();
   const [unitInv,       setUnitInv]       = useState([]);
   const [cases,         setCases]         = useState([]);
+  const [afseHistory,   setAfseHistory]   = useState([]);
   const [myReports,       setMyReports]       = useState([]);
   const [reviewReports,   setReviewReports]   = useState([]);
   const [approveReports,  setApproveReports]  = useState([]);
@@ -229,6 +230,7 @@ export default function Arenden() {
     if (isLogistics()) {
       api.unitInventory().then(setUnitInv).catch(() => {});
       api.pendingCases().then(setCases).catch(() => {});
+      api.afseHistory().then(setAfseHistory).catch(() => {});
     }
   }
 
@@ -526,6 +528,58 @@ export default function Arenden() {
                               className="text-xs px-2.5 py-1 bg-red-100 text-red-800 rounded-lg hover:bg-red-200 transition-colors">
                         Avslå
                       </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ─── AFSE-HISTORIK (logistik) ────────────────────────── */}
+      {isLogistics() && (
+        <section>
+          <h2 className="text-sm font-semibold text-gray-700 mb-3">AFSE-uppföljning</h2>
+          {afseHistory.length === 0 ? (
+            <div className="bg-white border border-gray-200 rounded-xl px-5 py-8 text-center text-sm text-gray-400">
+              Inga förlustärenden ännu
+            </div>
+          ) : (
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <ul className="divide-y divide-gray-100">
+                {afseHistory.map(c => (
+                  <li key={c.id} className="px-5 py-3 flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-900 truncate">
+                        {c.equipment_name}
+                        {c.article_number && <span className="text-xs text-gray-400 ml-1">· {c.article_number}</span>}
+                      </div>
+                      <div className="text-xs text-gray-400 mt-0.5">
+                        {c.user_name} · {c.unit_name} · anmält {fmt(c.created_at)}
+                      </div>
+                      <div className="text-xs mt-1 space-x-3">
+                        {c.afse_generated_at ? (
+                          <span className="text-blue-600">AFSE {fmt(c.afse_generated_at)}</span>
+                        ) : (
+                          <span className="text-gray-300">Ingen AFSE ännu</span>
+                        )}
+                        {c.material_received_at && (
+                          <span className="text-green-600">✓ Mottaget {fmt(c.material_received_at)}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {c.afse_generated_at && !c.material_received_at && (
+                        <button
+                          onClick={() => api.caseReceived(c.id).then(load).catch(e => alert(e.message))}
+                          className="text-xs px-2.5 py-1 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 transition-colors">
+                          Bekräfta mottaget
+                        </button>
+                      )}
+                      <Link to={`/blankett/${c.id}`} className="text-xs text-military-steel hover:underline">
+                        Skapa AFSE
+                      </Link>
                     </div>
                   </li>
                 ))}

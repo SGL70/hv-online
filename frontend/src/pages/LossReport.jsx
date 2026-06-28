@@ -247,19 +247,6 @@ export default function LossReport() {
           </Section>
         )}
 
-        <Section title="Fylls i manuellt av KVM">
-          <tbody>
-            <Row num="5"  label="Materielutlämnare" value={null} note="KVM:s namn och enhet" />
-            <Row num="7"  label="Avg-typ"           value={null} />
-            <Row num="21" label="A-typ"             value={null} note="Ej vid komp (motsv)" />
-            <Row num="24" label="Enhet"             value={null} note="st, par, set …" />
-            <Row num="26" label="à-pris"            value={null} />
-            <Row num="27" label="Belopp"            value={null} />
-            <Row num="30" label="Motsv mtrl beställs" value={null} note="Kryssa ruta på blanketten" />
-            <Row num="40" label="Beslut"            value={null} note="Överlämnas / Ersatt / Avslutas" />
-            <Row num="—"  label="Underskrift + tjänstegrad" value={null} />
-          </tbody>
-        </Section>
 
         <div className="print:hidden mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-center gap-4">
           <div className="flex-1 text-sm text-gray-600">

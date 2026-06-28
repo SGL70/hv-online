@@ -13,6 +13,7 @@ const files = [
   'migrate_mr.sql',
   'migrate_sava.sql',
   'migrate_kvm_settings.sql',
+  'migrate_afse_tracking.sql',
   'seed.sql',
   'seed_catalog.sql',
 ];

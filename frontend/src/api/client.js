@@ -158,7 +158,9 @@ export const api = {
   },
 
   // KVM-inställningar & AFSE
-  kvmSettings:    ()       => api.get('/kvm/settings'),
-  saveKvmSettings:(data)   => api.put('/kvm/settings', data),
-  afseUrl:        (caseId) => `/api/kvm/cases/${caseId}/afse`,
+  kvmSettings:       ()       => api.get('/kvm/settings'),
+  saveKvmSettings:   (data)   => api.put('/kvm/settings', data),
+  afseUrl:           (caseId) => `/api/kvm/cases/${caseId}/afse`,
+  afseHistory:       ()       => api.get('/kvm/afse-history'),
+  caseReceived:      (id)     => api.post(`/equipment/cases/${id}/received`),
 };
