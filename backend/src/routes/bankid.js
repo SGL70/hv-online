@@ -54,11 +54,35 @@ router.get('/callback',
         [personnummer]
       );
 
-      if (!result.rows.length) {
-        return res.redirect(`${FRONTEND_URL}/login?error=user_not_found`);
+      let user = result.rows[0];
+
+      if (!user) {
+        // Inte inloggad förut — men kan vara förhandsregistrerad av en grpc+ via
+        // POST /api/orgs/:id/members innan personens första BankID-inloggning
+        // (se organizations.js). Slå upp och, om så, skapa det riktiga kontot nu.
+        const pending = await pool.query(
+          'SELECT * FROM pending_members WHERE personal_number = $1',
+          [personnummer]
+        );
+        if (!pending.rows.length) {
+          return res.redirect(`${FRONTEND_URL}/login?error=user_not_found`);
+        }
+
+        const pm = pending.rows[0];
+        const name = claims.name
+          || [claims.given_name, claims.family_name].filter(Boolean).join(' ')
+          || 'Ny användare';
+
+        const created = await pool.query(
+          `INSERT INTO users (personal_number, name, role, org_unit_id, profile_complete)
+           VALUES ($1, $2, $3, $4, false)
+           RETURNING *`,
+          [personnummer, name, pm.role, pm.org_unit_id]
+        );
+        await pool.query('DELETE FROM pending_members WHERE personal_number = $1', [personnummer]);
+        user = created.rows[0];
       }
 
-      const user = result.rows[0];
       await pool.query('UPDATE users SET last_login = NOW() WHERE id = $1', [user.id]);
 
       const token = jwt.sign(
