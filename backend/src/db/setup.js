@@ -7,6 +7,7 @@ const files = [
   'schema.sql',
   'migrate_org_stab.sql',
   'migrate_gdpr.sql',
+  'migrate_retention.sql',
   'migrate_catalog.sql',
   'migrate_inventory.sql',
   'migrate_loss.sql',

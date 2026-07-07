@@ -145,7 +145,7 @@ async function resolveUnitPath(path, types, client) {
 router.get('/', requireLogistics, async (req, res) => {
   const { rows } = await pool.query(
     `SELECT u.id, u.name, u.role, u.mobile, u.email, u.personal_number,
-            u.org_unit_id,
+            u.org_unit_id, u.hv_id, u.anonymized_at,
             o.name AS unit_name,
             p.name AS parent_unit_name
      FROM users u
@@ -158,11 +158,11 @@ router.get('/', requireLogistics, async (req, res) => {
 
 // PUT /api/personal/:id — update a user
 router.put('/:id', requireLogistics, async (req, res) => {
-  const { name, role, org_unit_id, mobile, email, rank } = req.body;
+  const { name, role, org_unit_id, mobile, email, rank, service_ended_at } = req.body;
   const { rows } = await pool.query(
-    `UPDATE users SET name=$1, role=$2, org_unit_id=$3, mobile=$4, email=$5, rank=$6
-     WHERE id=$7 RETURNING id, name, role, org_unit_id, mobile, email, rank`,
-    [name, role, org_unit_id || null, mobile || null, email || null, rank || null, req.params.id]
+    `UPDATE users SET name=$1, role=$2, org_unit_id=$3, mobile=$4, email=$5, rank=$6, service_ended_at=$7
+     WHERE id=$8 RETURNING id, name, role, org_unit_id, mobile, email, rank, service_ended_at`,
+    [name, role, org_unit_id || null, mobile || null, email || null, rank || null, service_ended_at || null, req.params.id]
   );
   if (!rows.length) return res.status(404).json({ error: 'Användaren finns inte' });
   res.json(rows[0]);

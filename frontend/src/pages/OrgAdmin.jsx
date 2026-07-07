@@ -37,7 +37,11 @@ function PersonalList() {
 
   function startEdit(p) {
     setEditing(p.id);
-    setDraft({ name: p.name, role: p.role, org_unit_id: p.org_unit_id || '', mobile: p.mobile || '', email: p.email || '', rank: p.rank || '' });
+    setDraft({
+      name: p.name, role: p.role, org_unit_id: p.org_unit_id || '',
+      mobile: p.mobile || '', email: p.email || '', rank: p.rank || '',
+      service_ended_at: p.service_ended_at ? p.service_ended_at.slice(0, 10) : '',
+    });
   }
 
   async function save(id) {
@@ -51,6 +55,11 @@ function PersonalList() {
       setEditing(null);
     } catch(e) { alert(e.message); }
     finally { setSaving(false); }
+  }
+
+  async function exportPerson(p, e) {
+    e.stopPropagation();
+    try { await api.exportPerson(p.id, p.hv_id); } catch (err) { alert(err.message); }
   }
 
   async function anonymize(p, e) {
@@ -138,6 +147,12 @@ function PersonalList() {
                       <RankSelect value={draft.rank} onChange={v => setDraft(d => ({...d, rank: v}))}
                         className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none" />
                     </div>
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">Slutade (tjänstgöring)</label>
+                      <input type="date" value={draft.service_ended_at}
+                        onChange={e => setDraft(d => ({...d, service_ended_at: e.target.value}))}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-military-steel" />
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <button onClick={() => save(p.id)} disabled={saving}
@@ -167,14 +182,22 @@ function PersonalList() {
                 <td className="px-4 py-2 text-gray-400 text-xs font-mono">{p.personal_number}</td>
                 <td className="px-4 py-2 text-gray-300 text-xs">✎</td>
                 <td className="px-4 py-2 text-xs">
-                  {p.anonymized_at ? (
-                    <span className="text-gray-300">Anonymiserad</span>
-                  ) : canAnonymize && (
-                    <button onClick={e => anonymize(p, e)} disabled={anonymizing === p.id}
-                      className="text-red-400 hover:text-red-600 disabled:opacity-50 transition-colors">
-                      {anonymizing === p.id ? 'Anonymiserar…' : 'Anonymisera'}
-                    </button>
-                  )}
+                  <div className="flex items-center gap-3 justify-end">
+                    {canAnonymize && (
+                      <button onClick={e => exportPerson(p, e)}
+                        className="text-gray-400 hover:text-military-navy transition-colors">
+                        Exportera
+                      </button>
+                    )}
+                    {p.anonymized_at ? (
+                      <span className="text-gray-300">Anonymiserad</span>
+                    ) : canAnonymize && (
+                      <button onClick={e => anonymize(p, e)} disabled={anonymizing === p.id}
+                        className="text-red-400 hover:text-red-600 disabled:opacity-50 transition-colors">
+                        {anonymizing === p.id ? 'Anonymiserar…' : 'Anonymisera'}
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -224,7 +247,103 @@ function TreeNode({ node, onDelete, depth = 0 }) {
   );
 }
 
+function fmtDate(iso) {
+  return iso ? new Date(iso).toLocaleDateString('sv-SE') : '–';
+}
+
+function RetentionPanel() {
+  const [data,    setData]    = useState({ contacts: [], stale_activity_responses: [] });
+  const [loading, setLoading] = useState(true);
+  const [busy,    setBusy]    = useState(null); // id being acted on
+
+  function load() {
+    setLoading(true);
+    api.retentionCandidates().then(setData).finally(() => setLoading(false));
+  }
+  useEffect(load, []);
+
+  async function anonymize(c) {
+    if (!confirm(`Anonymisera ${c.name} (${c.hv_id})? Slutade tjänstgöra ${fmtDate(c.service_ended_at)}.`)) return;
+    setBusy(c.id);
+    try {
+      await api.anonymizePerson(c.id);
+      setData(d => ({ ...d, contacts: d.contacts.filter(x => x.id !== c.id) }));
+    } catch (e) { alert(e.message); }
+    finally { setBusy(null); }
+  }
+
+  async function deleteResponse(r) {
+    if (!confirm(`Radera aktivitetssvaret från ${r.user_name} för "${r.activity_title}"?`)) return;
+    setBusy(r.id);
+    try {
+      await api.deleteActivityResponse(r.id);
+      setData(d => ({ ...d, stale_activity_responses: d.stale_activity_responses.filter(x => x.id !== r.id) }));
+    } catch (e) { alert(e.message); }
+    finally { setBusy(null); }
+  }
+
+  if (loading) return <p className="text-sm text-gray-400">Laddar…</p>;
+
+  return (
+    <div className="space-y-6">
+      <p className="text-xs text-gray-500">
+        Kandidater flaggas här för manuell granskning — inget raderas eller anonymiseras automatiskt.
+        Kontrollera själv att åtgärden är rimlig innan du bekräftar.
+      </p>
+
+      <div>
+        <h2 className="text-sm font-semibold text-gray-700 mb-2">
+          Kontaktdata — slutade för mer än 1 år sedan ({data.contacts.length})
+        </h2>
+        {data.contacts.length === 0 ? (
+          <p className="text-sm text-gray-400">Inga kandidater</p>
+        ) : (
+          <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
+            {data.contacts.map(c => (
+              <div key={c.id} className="flex items-center justify-between px-4 py-2 text-sm">
+                <span>{c.name} <span className="text-xs text-gray-400 font-mono ml-1">{c.hv_id}</span></span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-gray-400">Slutade {fmtDate(c.service_ended_at)}</span>
+                  <button onClick={() => anonymize(c)} disabled={busy === c.id}
+                    className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50 transition-colors">
+                    {busy === c.id ? 'Anonymiserar…' : 'Anonymisera'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <h2 className="text-sm font-semibold text-gray-700 mb-2">
+          Aktivitetssvar äldre än 2 år ({data.stale_activity_responses.length})
+        </h2>
+        {data.stale_activity_responses.length === 0 ? (
+          <p className="text-sm text-gray-400">Inga kandidater</p>
+        ) : (
+          <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
+            {data.stale_activity_responses.map(r => (
+              <div key={r.id} className="flex items-center justify-between px-4 py-2 text-sm">
+                <span>{r.user_name} <span className="text-xs text-gray-400">— {r.activity_title}</span></span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-gray-400">{fmtDate(r.start_time)}</span>
+                  <button onClick={() => deleteResponse(r)} disabled={busy === r.id}
+                    className="text-xs text-red-400 hover:text-red-600 disabled:opacity-50 transition-colors">
+                    {busy === r.id ? 'Raderar…' : 'Radera'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function OrgAdmin() {
+  const { hasRole } = useAuth();
   const [tab, setTab]       = useState('org');
   const [units, setUnits]   = useState([]);
   const [form, setForm]     = useState({ name:'', type:'kompani', parent_id:'' });
@@ -258,7 +377,10 @@ export default function OrgAdmin() {
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 border-b border-gray-200">
-        {[['org','Org-träd'],['lista','Personal'],['personal','Personalimport']].map(([k,l]) => (
+        {[
+          ['org','Org-träd'], ['lista','Personal'], ['personal','Personalimport'],
+          ...(hasRole('s4') ? [['retention','Retention']] : []),
+        ].map(([k,l]) => (
           <button key={k} onClick={() => setTab(k)}
                   className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors
                     ${tab===k ? 'border-military-navy text-military-navy' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
@@ -267,8 +389,9 @@ export default function OrgAdmin() {
         ))}
       </div>
 
-      {tab === 'personal' && <PersonalImport />}
-      {tab === 'lista'    && <PersonalList />}
+      {tab === 'personal'  && <PersonalImport />}
+      {tab === 'lista'     && <PersonalList />}
+      {tab === 'retention' && hasRole('s4') && <RetentionPanel />}
       {tab === 'org' && <>
 
 

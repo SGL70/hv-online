@@ -25,6 +25,14 @@ export default function Profile() {
 
   const isSetup = !user.profile_complete;
 
+  async function handleExport() {
+    try {
+      await api.exportPerson(user.id, user.hv_id);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   async function handleSave(e) {
     e.preventDefault();
     if (!email || !mobile) { setError('E-post och mobilnummer krävs.'); return; }
@@ -146,6 +154,11 @@ export default function Profile() {
             </button>
           </div>
         </form>
+
+        <button type="button" onClick={handleExport}
+          className="w-full text-center text-xs text-gray-400 hover:text-military-navy mt-4 transition-colors">
+          Ladda ned mina uppgifter (registerutdrag)
+        </button>
       </div>
     </div>
   );

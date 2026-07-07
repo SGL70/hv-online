@@ -110,6 +110,21 @@ export const api = {
 
   // GDPR
   anonymizePerson: (id) => api.post(`/gdpr/${id}/anonymize`),
+  exportPerson: async (id, hvId) => {
+    const res = await fetch(`/api/gdpr/${id}/export`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    });
+    if (!res.ok) throw new Error('Export misslyckades');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `registerutdrag-${hvId || id}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+  retentionCandidates:     ()   => api.get('/gdpr/retention-candidates'),
+  deleteActivityResponse:  (id) => api.delete(`/gdpr/activity-responses/${id}`),
 
   // News
   newsList:        ()         => api.get('/news'),
