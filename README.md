@@ -50,8 +50,15 @@ Självhostad prototyp av ett digitalt administrativt stödsystem för Hemvärnet
 - Bataljonsdirekta enheter som är peers med kompanierna (inte underställda något kompani): Bataljonsstab, Pionjärpluton, Grkpluton, Flyg, Tolo
 - Självbetjänings-väljare (kaskad Bataljon → Kompani → Pluton → Tropp → Grupp) i profilen — bataljon och kompani obligatoriskt, pluton/tropp/grupp valfritt för kompaniledning och stabspersonal
 - Stöd för HvKomp-struktur: Chefsgrupp, Stab/TrossPluton, 1–4 Plutoner
-- Import av personal från ODS/XLSX (PRIO-export) — förhandsgranskning, automatisk mappning till org-enhet, idempotent re-import
+- Import av personal från ODS/XLSX (PRIO-export) — förhandsgranskning, automatisk mappning till org-enhet, idempotent re-import, flaggar (utan att skriva över) rader som skulle kollidera på en svag identifierare
 - Redigering av enskilda personer (namn, roll, enhet, kontakt)
+
+### GDPR
+- Internt Hv-ID (`HV-000001` osv.) som primär identifierare i icke-lagstadgade vyer — personnummer kvarstår bara där det krävs juridiskt (BankID, förhandsregistrering, AFSE-blankett, MR-export)
+- Registerutdrag (Art. 15) — vem som helst kan ladda ned sina egna uppgifter, s4+ kan exportera vem som helst
+- Anonymisering (Art. 17) — s4+ kan anonymisera en person via ett klick, med bevarad historik
+- Retention-flaggning — s4+ ser kandidater (utgången kontaktdata, gammal aktivitetshistorik) för manuell granskning
+- Integritetspolicy-sida (`/integritetspolicy`)
 
 ### Dashboard / Översikt
 - Personlig vy: nästa aktivitet, egna ärenden, utrustningsstatus
@@ -88,18 +95,22 @@ Självhostad prototyp av ett digitalt administrativt stödsystem för Hemvärnet
 
 ### GDPR — krävs för produktionsdrift
 
-Appen hanterar personuppgifter (namn, adress, telefon, personnummer, tjänstedata). Följande måste implementeras innan skarp drift:
+Appen hanterar personuppgifter (namn, adress, telefon, personnummer, tjänstedata).
 
-- [ ] **Registerutdrag (Art. 15)** — exportfunktion (PDF/JSON) som samlar all data om en individ: profil, utrustningshistorik, ärenden, SÄVA-redovisningar, km-ersättning och aktivitetssvar
-- [ ] **Rätten att bli glömd (Art. 17)** — anonymiserings­rutin som tar bort personidentifierande uppgifter men bevarar transaktioner (radering är inte alltid möjlig, se nedan)
-- [ ] **Retention-policy och bakgrundsjobb:**
-  - Kontaktuppgifter: aktiv + 1 år efter avslut
-  - Aktivitetssvar: 2 år
-  - SÄVA/km-ersättning: **7 år** (skattemässig preskription — *får ej raderas tidigare*)
-  - Utrustningshistorik: hela tjänstgöringstiden
-- [ ] **Integritetspolicy** — sida i appen som beskriver vilka uppgifter som behandlas, varför och hur länge
-- [ ] **Personnummer som nyckel** — inom Hemvärnet används personnummer *utan* de fyra sista siffrorna (ÅÅMMDD), vilket inte är unikt — flera soldater kan dela samma värde. Bör ersättas med ett internt unikt Hv-ID (t.ex. ett löpnummer per förband) redan i prototypstadiet
+- [x] **Registerutdrag (Art. 15)** — `GET /api/gdpr/:userId/export` samlar profil, utrustningshistorik, utrustningsärenden, aktivitetssvar, rapporter och inventeringstillfällen för en individ till en nedladdningsbar JSON-fil. Tillgängligt för individen själv (länk i `/profil`) och för s4+ (knapp i personallistan under Administration)
+- [x] **Rätten att bli glömd (Art. 17)** — `POST /api/gdpr/:userId/anonymize` (s4+) nollar personidentifierande fält men behåller raden, eftersom rapporter/ärenden/aktivitetssvar refererar `users.id` (flera med `ON DELETE CASCADE`) — en hård radering hade förstört historik som ska sparas
+- [x] **Retention — flaggning för manuell granskning** (medvetet inte ett automatiskt bakgrundsjobb, se nedan): `GET /api/gdpr/retention-candidates` (s4+, ny flik "Retention" under Administration) listar
+  - Kontaktuppgifter där `users.service_ended_at` passerat 1 år — åtgärdas med samma anonymisera-knapp som ovan
+  - Aktivitetssvar äldre än 2 år — egen raderaknapp (`DELETE /api/gdpr/activity-responses/:id`)
+  - SÄVA/km-ersättning (7 år, *får ej raderas tidigare*) och utrustningshistorik (hela tjänstgöringstiden) kräver ingen kandidat-logik — `reports.js`s enda DELETE-route tillåter redan bara `draft`/`submitted`/`returned`, aldrig `approved`, så 7-årsgolvet kan inte brytas via befintlig kod
+  - **Varför flaggning och inte automatik:** `service_ended_at` är ett nytt fält utan historik — en helt automatisk sanering skulle kunna få oavsiktliga konsekvenser om datumet någon gång sätts fel innan någon hunnit upptäcka det
+- [x] **Integritetspolicy** — `/integritetspolicy` (publik sida, länkad från inloggning och sidomenyn). Personuppgiftsansvarig/kontaktuppgifter är **platshållartext** — måste fyllas i med riktiga uppgifter innan sidan är komplett
+- [x] **Personnummer som nyckel** — `users.hv_id` (genererad kolumn, `HV-` + `id`) är nu den interna identifieraren i icke-lagstadgade vyer (ärendelistor m.m.). `personal_number` kvarstår bara där det är juridiskt nödvändigt: BankID-inloggning, förhandsregistrering (`pending_members`), samt AFSE-blanketten och MR-exporten som faktiskt kräver det riktiga numret
 - [ ] **DPA-avtal** med serverleverantören om appen hostas externt
+
+**Kända uppföljningar:**
+- Personalimportens (`personal.js`) svaga fallback-nyckel (befattningsnummer/namn när riktigt personnummer saknas) flaggar nu kolliderande rader (`conflicts`/`duplicate_keys_in_file`) istället för att tyst slå ihop dem — men själva nyckelstrategin är inte omdesignad
+- BankID-inloggningen (branch `bankid`, ej på `master`/ej driftsatt) läser nu `pending_members` vid första inloggning för förhandsregistrerade — otestad mot en riktig Criipto-session, verifiera claim-namnen (`name`/`given_name`/`family_name`) innan branchen mergas
 
 **Rättslig grund:** troligen *avtal* (Art. 6.1b) via hemvärnsavtalet och/eller *berättigat intresse* (Art. 6.1f). Kontakta Försvarsmaktens juridiska avdelning eller IMY för bekräftelse innan produktionssättning.
 
