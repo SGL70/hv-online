@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import PersonalImport from './PersonalImport';
 import { RankInsignia, RankSelect } from '../components/Rank';
+import { TYPE_ORDER, TYPE_LABELS } from '../constants/orgUnits';
 
 const ROLE_LABELS = {
   soldat:'Soldat', grpc:'Gruppchef', pc:'Plutonchef', toc:'Troppchef',
@@ -156,11 +157,6 @@ function PersonalList() {
     </div>
   );
 }
-
-const TYPE_ORDER = ['bataljon','kompani','pluton','tropp','grupp'];
-const TYPE_LABELS = {
-  bataljon:'Bataljon', kompani:'Kompani', pluton:'Pluton', tropp:'Tropp', grupp:'Grupp'
-};
 
 function buildTree(units) {
   const map = {};

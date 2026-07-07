@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { RankSelect } from '../components/Rank';
+import { UnitPicker } from '../components/UnitPicker';
 
 export default function Profile() {
   const { user, refreshUser } = useAuth();
@@ -13,8 +14,12 @@ export default function Profile() {
   const [postalCode, setPostalCode] = useState(user?.postal_code || '');
   const [city,       setCity]       = useState(user?.city        || '');
   const [rank,       setRank]       = useState(user?.rank        || '');
+  const [orgUnitId,  setOrgUnitId]  = useState(user?.org_unit_id || null);
+  const [units,      setUnits]      = useState([]);
   const [saving,     setSaving]     = useState(false);
   const [error,      setError]      = useState('');
+
+  useEffect(() => { api.orgs().then(setUnits); }, []);
 
   if (!user) return <div className="min-h-screen flex items-center justify-center">Laddar…</div>;
 
@@ -23,9 +28,10 @@ export default function Profile() {
   async function handleSave(e) {
     e.preventDefault();
     if (!email || !mobile) { setError('E-post och mobilnummer krävs.'); return; }
+    if (!orgUnitId) { setError('Ange organisationstillhörighet.'); return; }
     setSaving(true);
     try {
-      await api.saveProfile({ email, mobile, street, postal_code: postalCode, city, rank });
+      await api.saveProfile({ email, mobile, street, postal_code: postalCode, city, rank, org_unit_id: orgUnitId });
       await refreshUser();
       navigate('/');
     } catch (err) {
@@ -117,6 +123,13 @@ export default function Profile() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Grad</label>
             <RankSelect value={rank} onChange={setRank}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-military-steel" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-1">Organisationstillhörighet</p>
+            <p className="text-xs text-gray-500 mb-2">
+              Ange minst bataljon och kompani. Pluton och grupp lämnas tomt om du tillhör kompaniledningen.
+            </p>
+            <UnitPicker units={units} value={orgUnitId} onChange={setOrgUnitId} />
           </div>
           <div className="flex gap-3 pt-1">
             {!isSetup && (

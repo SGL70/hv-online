@@ -209,6 +209,24 @@ function ResponseSummary({ a }) {
   );
 }
 
+function KompaniSummary({ summary }) {
+  return (
+    <div className="mt-3 border-t border-gray-100 pt-3 space-y-2">
+      {summary.map(k => (
+        <div key={k.kompani_id ?? k.kompani_name} className="flex items-center justify-between text-xs">
+          <span className="font-medium text-gray-700">{k.kompani_name}</span>
+          <div className="flex items-center gap-2">
+            {k.ja > 0      && <span className="inline-flex items-center gap-1 text-green-700 bg-green-50 border border-green-200 rounded px-2 py-0.5">✓ {k.ja}</span>}
+            {k.nej > 0     && <span className="inline-flex items-center gap-1 text-red-600  bg-red-50   border border-red-200   rounded px-2 py-0.5">✗ {k.nej}</span>}
+            {k.kanske > 0  && <span className="inline-flex items-center gap-1 text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-2 py-0.5">? {k.kanske}</span>}
+            {k.pending > 0 && <span className="inline-flex items-center gap-1 text-gray-400 bg-gray-50 border border-gray-200 rounded px-2 py-0.5">– {k.pending}</span>}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function ActivityDetail({ actId }) {
   const [detail, setDetail] = useState(null);
 
@@ -218,10 +236,15 @@ function ActivityDetail({ actId }) {
 
   if (!detail) return <p className="text-xs text-gray-400 py-2">Laddar…</p>;
 
-  // Group responses by unit
+  // Bataljonsnivå ser bara antal per kompani, inga namn
+  if (detail.summary_by_kompani) {
+    return <KompaniSummary summary={detail.summary_by_kompani} />;
+  }
+
+  // Kompaninivå och nedåt: gruppera svaren per pluton (kompaniledning saknar pluton)
   const groups = {};
   for (const r of detail.responses) {
-    const key = r.unit_name || 'Okänd enhet';
+    const key = r.pluton_name || 'Kompaniledning';
     if (!groups[key]) groups[key] = [];
     groups[key].push(r);
   }

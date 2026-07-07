@@ -76,6 +76,9 @@ router.post('/', requireRole('grpc'), async (req, res) => {
     }).catch(e => console.error('[notify activity]', e.message));
 });
 
+// Roller som bara ska se antal per kompani i aktivitetssammanställningar, inte namn
+const BATTALION_LEVEL_ROLES = ['batCh', 's4', 'stab'];
+
 // GET /api/activities/:id
 router.get('/:id', async (req, res) => {
   const result = await pool.query(`
@@ -87,19 +90,51 @@ router.get('/:id', async (req, res) => {
   `, [req.params.id]);
   if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
 
+  // Slår upp respondentens närmaste kompani- och pluton-anfader (kan vara samma
+  // nod som u.org_unit_id, t.ex. för kompaniledning som saknar pluton).
   const responses = await pool.query(`
     SELECT ar.*, u.name AS user_name, u.role,
-           ou.name AS unit_name, ou.id AS unit_id,
-           oup.name AS parent_unit_name
+           anc.kompani_id, anc.kompani_name, anc.pluton_id, anc.pluton_name
     FROM activity_responses ar
     JOIN users u ON u.id = ar.user_id
-    LEFT JOIN org_units ou  ON ou.id  = u.org_unit_id
-    LEFT JOIN org_units oup ON oup.id = ou.parent_id
+    LEFT JOIN LATERAL (
+      WITH RECURSIVE chain AS (
+        SELECT id, parent_id, type, name FROM org_units WHERE id = u.org_unit_id
+        UNION ALL
+        SELECT o.id, o.parent_id, o.type, o.name FROM org_units o JOIN chain c ON o.id = c.parent_id
+      )
+      SELECT
+        (SELECT id   FROM chain WHERE type = 'kompani' LIMIT 1) AS kompani_id,
+        (SELECT name FROM chain WHERE type = 'kompani' LIMIT 1) AS kompani_name,
+        (SELECT id   FROM chain WHERE type = 'pluton'  LIMIT 1) AS pluton_id,
+        (SELECT name FROM chain WHERE type = 'pluton'  LIMIT 1) AS pluton_name
+    ) anc ON true
     WHERE ar.activity_id = $1
-    ORDER BY COALESCE(oup.name, ou.name), ou.name, u.name
+    ORDER BY anc.kompani_name NULLS LAST, anc.pluton_name NULLS FIRST, u.name
   `, [req.params.id]);
 
-  res.json({ ...result.rows[0], responses: responses.rows });
+  const payload = { ...result.rows[0], responses: responses.rows };
+
+  if (BATTALION_LEVEL_ROLES.includes(req.user.role)) {
+    const byKompani = new Map();
+    for (const r of responses.rows) {
+      const key = r.kompani_id ?? 'okänd';
+      if (!byKompani.has(key)) {
+        byKompani.set(key, {
+          kompani_id: r.kompani_id, kompani_name: r.kompani_name || 'Okänt kompani',
+          ja: 0, nej: 0, kanske: 0, pending: 0,
+        });
+      }
+      const bucket = byKompani.get(key);
+      if (r.status === 'ja') bucket.ja++;
+      else if (r.status === 'nej') bucket.nej++;
+      else if (r.status === 'kanske') bucket.kanske++;
+      else bucket.pending++;
+    }
+    payload.summary_by_kompani = [...byKompani.values()];
+  }
+
+  res.json(payload);
 });
 
 // PUT /api/activities/:id — redigera aktivitet (grpc+)

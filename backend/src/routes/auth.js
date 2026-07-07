@@ -60,12 +60,20 @@ router.get('/me', requireAuth, async (req, res) => {
 
 // PUT /api/auth/profile — self-service contact details
 router.put('/profile', requireAuth, async (req, res) => {
-  const { email, mobile, street, postal_code, city, rank } = req.body;
+  const { email, mobile, street, postal_code, city, rank, org_unit_id } = req.body;
+
+  let orgUnitId = null;
+  if (org_unit_id) {
+    const unit = await pool.query('SELECT id FROM org_units WHERE id=$1', [org_unit_id]);
+    if (!unit.rows.length) return res.status(400).json({ error: 'Okänd organisationsenhet' });
+    orgUnitId = unit.rows[0].id;
+  }
+
   const result = await pool.query(
     `UPDATE users SET email=$1, mobile=$2, street=$3, postal_code=$4, city=$5,
-                      rank=$6, profile_complete=TRUE
-     WHERE id=$7 RETURNING *`,
-    [email, mobile, street || null, postal_code || null, city || null, rank || null, req.user.id]
+                      rank=$6, org_unit_id=$7, profile_complete=TRUE
+     WHERE id=$8 RETURNING *`,
+    [email, mobile, street || null, postal_code || null, city || null, rank || null, orgUnitId, req.user.id]
   );
   res.json(result.rows[0]);
 });
