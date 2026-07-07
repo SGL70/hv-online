@@ -209,12 +209,12 @@ function ResponseSummary({ a }) {
   );
 }
 
-function KompaniSummary({ summary }) {
+function UnitSummary({ summary }) {
   return (
     <div className="mt-3 border-t border-gray-100 pt-3 space-y-2">
       {summary.map(k => (
-        <div key={k.kompani_id ?? k.kompani_name} className="flex items-center justify-between text-xs">
-          <span className="font-medium text-gray-700">{k.kompani_name}</span>
+        <div key={k.unit_id ?? k.unit_name} className="flex items-center justify-between text-xs">
+          <span className="font-medium text-gray-700">{k.unit_name}</span>
           <div className="flex items-center gap-2">
             {k.ja > 0      && <span className="inline-flex items-center gap-1 text-green-700 bg-green-50 border border-green-200 rounded px-2 py-0.5">✓ {k.ja}</span>}
             {k.nej > 0     && <span className="inline-flex items-center gap-1 text-red-600  bg-red-50   border border-red-200   rounded px-2 py-0.5">✗ {k.nej}</span>}
@@ -236,15 +236,17 @@ function ActivityDetail({ actId }) {
 
   if (!detail) return <p className="text-xs text-gray-400 py-2">Laddar…</p>;
 
-  // Bataljonsnivå ser bara antal per kompani, inga namn
-  if (detail.summary_by_kompani) {
-    return <KompaniSummary summary={detail.summary_by_kompani} />;
+  // Bataljonsnivå ser bara antal per enhet (kompani, Bataljonsstab, bataljonsdirekt
+  // pluton/grupp), inga namn
+  if (detail.summary_by_unit) {
+    return <UnitSummary summary={detail.summary_by_unit} />;
   }
 
-  // Kompaninivå och nedåt: gruppera svaren per pluton (kompaniledning saknar pluton)
+  // Kompaninivå och nedåt: gruppera svaren per pluton (kompaniledning och andra
+  // som saknar pluton, t.ex. en grupp direkt under bataljon, hamnar i "Utan pluton")
   const groups = {};
   for (const r of detail.responses) {
-    const key = r.pluton_name || 'Kompaniledning';
+    const key = r.pluton_name || 'Utan pluton';
     if (!groups[key]) groups[key] = [];
     groups[key].push(r);
   }

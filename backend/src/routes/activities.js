@@ -76,7 +76,7 @@ router.post('/', requireRole('grpc'), async (req, res) => {
     }).catch(e => console.error('[notify activity]', e.message));
 });
 
-// Roller som bara ska se antal per kompani i aktivitetssammanställningar, inte namn
+// Roller som bara ska se antal per enhet i aktivitetssammanställningar, inte namn
 const BATTALION_LEVEL_ROLES = ['batCh', 's4', 'stab'];
 
 // GET /api/activities/:id
@@ -90,48 +90,52 @@ router.get('/:id', async (req, res) => {
   `, [req.params.id]);
   if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
 
-  // Slår upp respondentens närmaste kompani- och pluton-anfader (kan vara samma
-  // nod som u.org_unit_id, t.ex. för kompaniledning som saknar pluton).
+  // Slår upp respondentens rapporteringsenhet (närmaste anfader som INTE är av
+  // typen 'bataljon' — dvs kompaniet, Bataljonsstaben eller en bataljonsdirekt
+  // pluton/grupp som Musikpluton/Tolo/Flyg) samt närmaste pluton-anfader.
+  // I dagens ensam-kompani-läge (ingen bataljon-nod alls) blir rapporteringsenheten
+  // helt enkelt kompani-roten.
   const responses = await pool.query(`
     SELECT ar.*, u.name AS user_name, u.role,
-           anc.kompani_id, anc.kompani_name, anc.pluton_id, anc.pluton_name
+           anc.unit_id, anc.unit_name AS reporting_unit_name, anc.pluton_id, anc.pluton_name
     FROM activity_responses ar
     JOIN users u ON u.id = ar.user_id
     LEFT JOIN LATERAL (
       WITH RECURSIVE chain AS (
-        SELECT id, parent_id, type, name FROM org_units WHERE id = u.org_unit_id
+        SELECT id, parent_id, type, name, 0 AS depth FROM org_units WHERE id = u.org_unit_id
         UNION ALL
-        SELECT o.id, o.parent_id, o.type, o.name FROM org_units o JOIN chain c ON o.id = c.parent_id
+        SELECT o.id, o.parent_id, o.type, o.name, c.depth + 1
+        FROM org_units o JOIN chain c ON o.id = c.parent_id
       )
       SELECT
-        (SELECT id   FROM chain WHERE type = 'kompani' LIMIT 1) AS kompani_id,
-        (SELECT name FROM chain WHERE type = 'kompani' LIMIT 1) AS kompani_name,
-        (SELECT id   FROM chain WHERE type = 'pluton'  LIMIT 1) AS pluton_id,
-        (SELECT name FROM chain WHERE type = 'pluton'  LIMIT 1) AS pluton_name
+        (SELECT id   FROM chain WHERE type <> 'bataljon' ORDER BY depth DESC LIMIT 1) AS unit_id,
+        (SELECT name FROM chain WHERE type <> 'bataljon' ORDER BY depth DESC LIMIT 1) AS unit_name,
+        (SELECT id   FROM chain WHERE type = 'pluton' LIMIT 1) AS pluton_id,
+        (SELECT name FROM chain WHERE type = 'pluton' LIMIT 1) AS pluton_name
     ) anc ON true
     WHERE ar.activity_id = $1
-    ORDER BY anc.kompani_name NULLS LAST, anc.pluton_name NULLS FIRST, u.name
+    ORDER BY anc.unit_name NULLS LAST, anc.pluton_name NULLS FIRST, u.name
   `, [req.params.id]);
 
   const payload = { ...result.rows[0], responses: responses.rows };
 
   if (BATTALION_LEVEL_ROLES.includes(req.user.role)) {
-    const byKompani = new Map();
+    const byUnit = new Map();
     for (const r of responses.rows) {
-      const key = r.kompani_id ?? 'okänd';
-      if (!byKompani.has(key)) {
-        byKompani.set(key, {
-          kompani_id: r.kompani_id, kompani_name: r.kompani_name || 'Okänt kompani',
+      const key = r.unit_id ?? 'okänd';
+      if (!byUnit.has(key)) {
+        byUnit.set(key, {
+          unit_id: r.unit_id, unit_name: r.reporting_unit_name || 'Okänd enhet',
           ja: 0, nej: 0, kanske: 0, pending: 0,
         });
       }
-      const bucket = byKompani.get(key);
+      const bucket = byUnit.get(key);
       if (r.status === 'ja') bucket.ja++;
       else if (r.status === 'nej') bucket.nej++;
       else if (r.status === 'kanske') bucket.kanske++;
       else bucket.pending++;
     }
-    payload.summary_by_kompani = [...byKompani.values()];
+    payload.summary_by_unit = [...byUnit.values()];
   }
 
   res.json(payload);
