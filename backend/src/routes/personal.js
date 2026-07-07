@@ -182,17 +182,51 @@ router.post('/preview', requireLogistics, upload.single('file'), (req, res) => {
 });
 
 // POST /api/personal/import — upsert edited persons list (JSON body)
+//
+// personal_number är inte alltid ett riktigt personnummer — parseOds() faller
+// tillbaka på befattningsnummer eller ett namn-baserat nyckel när källfilen
+// saknar det. En svag nyckel som råkar kollidera mellan två olika personer
+// skulle annars tyst slås ihop via ON CONFLICT. Två spärrar mot det:
+//  1. Nycklar som förekommer mer än en gång i samma fil kan inte särskiljas
+//     säkert — de hoppas över helt och flaggas.
+//  2. En svag nyckel (inte 12 siffror) som redan pekar på en annan persons
+//     namn i databasen skrivs inte över — flaggas som konflikt istället.
+// Riktiga personnummer (12 siffror) är i praktiken garanterat unika och
+// hanteras som tidigare, utan extra kontroll.
 router.post('/import', requireLogistics, async (req, res) => {
   const { persons } = req.body;
   if (!Array.isArray(persons) || persons.length === 0)
     return res.status(400).json({ error: 'Ingen personal att importera' });
 
+  const keyCounts = new Map();
+  for (const p of persons) keyCounts.set(p.personal_number, (keyCounts.get(p.personal_number) || 0) + 1);
+  const duplicateKeysInFile = [...keyCounts.entries()].filter(([, c]) => c > 1).map(([k]) => k);
+  const isFullPersonnummer = key => /^\d{12}$/.test(key || '');
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     let created = 0, updated = 0;
+    const conflicts = [];
 
     for (const p of persons) {
+      if (duplicateKeysInFile.includes(p.personal_number)) continue;
+
+      if (!isFullPersonnummer(p.personal_number)) {
+        const existing = await client.query(
+          'SELECT name FROM users WHERE personal_number=$1', [p.personal_number]
+        );
+        if (existing.rows.length &&
+            existing.rows[0].name.trim().toLowerCase() !== (p.name || '').trim().toLowerCase()) {
+          conflicts.push({
+            personal_number: p.personal_number,
+            existing_name: existing.rows[0].name,
+            incoming_name: p.name,
+          });
+          continue;
+        }
+      }
+
       // Use full path if available (unedited preview data), else name-only fallback
       const path  = Array.isArray(p.unit_path) && p.unit_path.length > 0
                     ? p.unit_path : [p.unit_label];
@@ -215,7 +249,11 @@ router.post('/import', requireLogistics, async (req, res) => {
     }
 
     await client.query('COMMIT');
-    res.json({ created, updated, total: persons.length });
+    res.json({
+      created, updated, total: persons.length,
+      conflicts,
+      duplicate_keys_in_file: duplicateKeysInFile,
+    });
   } catch (e) {
     await client.query('ROLLBACK');
     res.status(500).json({ error: e.message });

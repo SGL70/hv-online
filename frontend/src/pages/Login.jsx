@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 
@@ -112,8 +112,11 @@ export default function Login() {
         </div>
 
         {/* Bottomspacer + versionsnummer */}
-        <div className="flex-[2] flex items-end justify-center">
+        <div className="flex-[2] flex flex-col items-center justify-end gap-1">
           <p className="text-white/25 text-xs text-center">V0.1 Prototyp</p>
+          <Link to="/integritetspolicy" className="text-white/25 hover:text-white/50 text-xs underline transition-colors">
+            Integritetspolicy
+          </Link>
         </div>
       </div>
 

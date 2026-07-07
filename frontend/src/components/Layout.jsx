@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import {
   LayoutDashboard, Calendar, ClipboardList, Package,
-  FolderOpen, Users, Settings, Menu, BookOpen,
+  FolderOpen, Users, Settings, Menu, BookOpen, LogOut,
 } from 'lucide-react';
 import { RankInsignia } from './Rank';
 
@@ -56,15 +56,11 @@ function SidebarContent({ user, pendingBadge, hasRole, isLogistics, onNav, onLog
             <div className="text-white/50 text-xs truncate">{user?.unit_name}</div>
           </div>
         </div>
-        <div className="mt-2 flex flex-col gap-1">
+        <div className="mt-2">
           <NavLink to="/profil" onClick={onNav}
             className="text-xs text-white/50 hover:text-white transition-colors">
             Redigera profil
           </NavLink>
-          <button onClick={onLogout}
-                  className="text-xs text-white/50 hover:text-white transition-colors text-left">
-            Logga ut
-          </button>
         </div>
       </div>
 
@@ -82,6 +78,18 @@ function SidebarContent({ user, pendingBadge, hasRole, isLogistics, onNav, onLog
           <NavItem to="/org"      label="Administration"   icon={Settings}         onClick={onNav} />
         )}
       </nav>
+
+      <div className="px-2 py-3 border-t border-white/10 shrink-0">
+        <NavLink to="/integritetspolicy" onClick={onNav}
+          className="block px-4 pb-2 text-xs text-white/40 hover:text-white/70 transition-colors">
+          Integritetspolicy
+        </NavLink>
+        <button onClick={onLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-white/70 hover:text-white hover:bg-red-600/20 transition-colors text-sm font-medium">
+          <LogOut size={18} strokeWidth={1.75} className="shrink-0" />
+          Logga ut
+        </button>
+      </div>
     </>
   );
 }

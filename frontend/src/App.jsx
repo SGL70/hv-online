@@ -14,6 +14,7 @@ import LossReport  from './pages/LossReport';
 import Arenden     from './pages/Arenden';
 import Documents   from './pages/Documents';
 import KompO      from './pages/KompO';
+import Privacy    from './pages/Privacy';
 
 function Protected({ children }) {
   const { user, loading } = useAuth();
@@ -41,6 +42,7 @@ export default function App() {
       <Route path="/dokument" element={<Protected><Documents /></Protected>} />
       <Route path="/kompo"   element={<Protected><KompO /></Protected>} />
       <Route path="/blankett/:id" element={<LossReport />} />
+      <Route path="/integritetspolicy" element={<Privacy />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

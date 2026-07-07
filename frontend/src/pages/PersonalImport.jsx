@@ -117,6 +117,36 @@ export default function PersonalImport() {
         </div>
       )}
 
+      {result && (result.conflicts?.length > 0 || result.duplicate_keys_in_file?.length > 0) && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 text-sm text-amber-800 space-y-2">
+          <p className="font-semibold">
+            {(result.conflicts?.length || 0) + (result.duplicate_keys_in_file?.length || 0)} rad(er) hoppades över — hanteras inte automatiskt
+          </p>
+          {result.conflicts?.length > 0 && (
+            <div>
+              <p className="text-xs font-medium mb-1">
+                Saknar riktigt personnummer och pekar på en annan persons rad — kontrollera manuellt:
+              </p>
+              <ul className="text-xs space-y-0.5 list-disc list-inside">
+                {result.conflicts.map((c, i) => (
+                  <li key={i}>{c.incoming_name} ↔ befintlig rad "{c.existing_name}" ({c.personal_number})</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {result.duplicate_keys_in_file?.length > 0 && (
+            <div>
+              <p className="text-xs font-medium mb-1">
+                Samma nyckel förekommer flera gånger i filen (kan inte särskiljas):
+              </p>
+              <ul className="text-xs space-y-0.5 list-disc list-inside">
+                {result.duplicate_keys_in_file.map((k, i) => <li key={i}>{k}</li>)}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Editable persons list */}
       {persons && (
         <div className="space-y-3">
