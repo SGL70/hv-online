@@ -45,7 +45,10 @@ Självhostad prototyp av ett digitalt administrativt stödsystem för Hemvärnet
 - Stöd för bild, schemalagd publicering (publish_at) och omedelbar publicering
 
 ### Organisation
-- Hierarkiskt org-träd: bataljon → kompani → pluton → Tropp → grupp
+- Hierarkiskt org-träd: bataljon → kompani → pluton → tropp → grupp, plus en egen typ `stab` för ledningsenheter (Bataljonsstab, Stab- & Trosspluton)
+- Trädet kan innehålla flera bataljoner parallellt (flera rötter) — kompanilittrering följer bataljonsnumret, t.ex. bataljon 11 → 111/112/113. Kompani, bataljon 12 → 121–124. Kompani
+- Bataljonsdirekta enheter som är peers med kompanierna (inte underställda något kompani): Bataljonsstab, Pionjärpluton, Grkpluton, Flyg, Tolo
+- Självbetjänings-väljare (kaskad Bataljon → Kompani → Pluton → Tropp → Grupp) i profilen — bataljon och kompani obligatoriskt, pluton/tropp/grupp valfritt för kompaniledning och stabspersonal
 - Stöd för HvKomp-struktur: Chefsgrupp, Stab/TrossPluton, 1–4 Plutoner
 - Import av personal från ODS/XLSX (PRIO-export) — förhandsgranskning, automatisk mappning till org-enhet, idempotent re-import
 - Redigering av enskilda personer (namn, roll, enhet, kontakt)
@@ -185,7 +188,7 @@ Realistisk concurrent load för Hemvärnet: ~500–1 000 användare under ett ö
 ### Databasschema (översikt)
 
 ```
-org_units          — hierarkiskt träd (id, name, type, parent_id)
+org_units          — hierarkiskt träd (id, name, type, parent_id); type: bataljon/kompani/pluton/tropp/grupp/stab
 users              — personal (personal_number som nyckel, role, org_unit_id)
 activities         — kalenderaktiviteter
 activity_responses — OSA per person (ja/nej/kanske)

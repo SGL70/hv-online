@@ -3,7 +3,7 @@
 CREATE TABLE IF NOT EXISTS org_units (
   id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,
-  type TEXT NOT NULL CHECK (type IN ('bataljon', 'kompani', 'pluton', 'tropp', 'grupp')),
+  type TEXT NOT NULL CHECK (type IN ('bataljon', 'kompani', 'pluton', 'tropp', 'grupp', 'stab')),
   parent_id INTEGER REFERENCES org_units(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
