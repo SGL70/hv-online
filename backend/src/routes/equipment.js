@@ -106,7 +106,7 @@ router.get('/cases/:id', async (req, res) => {
   const result = await pool.query(`
     SELECT ec.*,
            e.name AS equipment_name, e.article_number, e.quantity,
-           u.name AS user_name, u.personal_number, u.email, u.mobile,
+           u.name AS user_name, u.hv_id, u.email, u.mobile,
            o.name AS unit_name,
            r.name AS reviewer_name
     FROM equipment_cases ec

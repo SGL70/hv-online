@@ -34,6 +34,8 @@ router.put('/settings', requireLogistics, async (req, res) => {
 });
 
 // GET /api/kvm/cases/:id/afse — generera fylld förlustförteckning
+// Skriver medvetet u.personal_number (inte hv_id) i PDF:en — myndighetsblanketten
+// kräver soldatens riktiga personnummer, inte ett internt id.
 router.get('/cases/:id/afse', requireLogistics, async (req, res) => {
   const caseResult = await pool.query(
     `SELECT ec.*, e.name AS equipment_name, e.article_number, e.quantity, e.unit, e.category,
@@ -158,7 +160,7 @@ router.get('/afse-history', requireLogistics, async (req, res) => {
   const ids = await getSubtreeIds(scopeId);
   const r = await pool.query(
     `SELECT ec.id, ec.status, ec.created_at, ec.afse_generated_at, ec.material_received_at,
-            u.name AS user_name, u.personal_number,
+            u.name AS user_name, u.hv_id,
             e.name AS equipment_name, e.article_number,
             o.name AS unit_name
      FROM equipment_cases ec

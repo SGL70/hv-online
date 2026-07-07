@@ -243,6 +243,7 @@ npm run db:setup
 |-----|----------|
 | `schema.sql` | Alla tabeller |
 | `migrate_org_stab.sql` | Stöd för stab-enhetstyp |
+| `migrate_gdpr.sql` | Internt Hv-ID (`hv_id`), nullbar personal_number, `anonymized_at` |
 | `migrate_catalog.sql` | Utökad materialkatalog |
 | `migrate_inventory.sql` | Inventeringstabeller |
 | `migrate_loss.sql` | Förlustärenden |

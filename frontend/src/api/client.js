@@ -108,6 +108,9 @@ export const api = {
   personalList:   ()         => api.get('/personal'),
   updatePerson:   (id, data) => api.put(`/personal/${id}`, data),
 
+  // GDPR
+  anonymizePerson: (id) => api.post(`/gdpr/${id}/anonymize`),
+
   // News
   newsList:        ()         => api.get('/news'),
   createNews:      (data)     => api.post('/news', data),

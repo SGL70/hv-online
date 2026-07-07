@@ -110,6 +110,8 @@ router.get('/pending-count', async (req, res) => {
 
 // GET /api/reports/export — Excel-export av attesterade rapporter (kompc+)
 // ?from=YYYY-MM-DD &to=YYYY-MM-DD &mark=1 (markera som skickade till MR)
+// Skriver medvetet u.personal_number (inte hv_id) — redovisningen går vidare
+// till MR-gruppen HR som identifierar soldater på riktigt personnummer.
 router.get('/export', requireRole('kompc'), async (req, res) => {
   const { from, to, mark } = req.query;
   const ids = await getSubtreeIds(req.user.org_unit_id);

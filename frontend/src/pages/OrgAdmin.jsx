@@ -3,6 +3,7 @@ import { api } from '../api/client';
 import PersonalImport from './PersonalImport';
 import { RankInsignia, RankSelect } from '../components/Rank';
 import { TYPE_ORDER, TYPE_LABELS } from '../constants/orgUnits';
+import { useAuth } from '../context/AuthContext';
 
 const ROLE_LABELS = {
   soldat:'Soldat', grpc:'Gruppchef', pc:'Plutonchef', toc:'Troppchef',
@@ -16,13 +17,16 @@ const ROLE_COLORS = {
 };
 
 function PersonalList() {
-  const [persons,  setPersons]  = useState([]);
-  const [units,    setUnits]    = useState([]);
-  const [query,    setQuery]    = useState('');
-  const [editing,  setEditing]  = useState(null);  // person id being edited
-  const [draft,    setDraft]    = useState({});
-  const [saving,   setSaving]   = useState(false);
-  const [loading,  setLoading]  = useState(true);
+  const { hasRole } = useAuth();
+  const [persons,    setPersons]    = useState([]);
+  const [units,      setUnits]      = useState([]);
+  const [query,      setQuery]      = useState('');
+  const [editing,    setEditing]    = useState(null);  // person id being edited
+  const [draft,      setDraft]      = useState({});
+  const [saving,     setSaving]     = useState(false);
+  const [loading,    setLoading]    = useState(true);
+  const [anonymizing, setAnonymizing] = useState(null); // person id being anonymized
+  const canAnonymize = hasRole('s4');
 
   function load() {
     Promise.all([api.personalList(), api.orgs()])
@@ -47,6 +51,21 @@ function PersonalList() {
       setEditing(null);
     } catch(e) { alert(e.message); }
     finally { setSaving(false); }
+  }
+
+  async function anonymize(p, e) {
+    e.stopPropagation();
+    if (!confirm(
+      `Anonymisera ${p.name}?\n\nNamn, personnummer, kontaktuppgifter och grad rensas permanent. ` +
+      `Kontrollera själv att inga lagringskrav (t.ex. SÄVA/km-ersättning, 7 år) gäller innan du fortsätter — ` +
+      `detta görs inte automatiskt.`
+    )) return;
+    setAnonymizing(p.id);
+    try {
+      const updated = await api.anonymizePerson(p.id);
+      setPersons(prev => prev.map(x => x.id === p.id ? { ...x, ...updated, personal_number: null } : x));
+    } catch (err) { alert(err.message); }
+    finally { setAnonymizing(null); }
   }
 
   const filtered = persons.filter(p => {
@@ -76,12 +95,13 @@ function PersonalList() {
               <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Enhet</th>
               <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Inloggningsnr</th>
               <th className="px-4 py-2 w-8"></th>
+              <th className="px-4 py-2 w-8"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filtered.map(p => editing === p.id ? (
               <tr key={p.id} className="bg-blue-50">
-                <td colSpan={5} className="px-4 py-3">
+                <td colSpan={6} className="px-4 py-3">
                   <div className="grid grid-cols-2 gap-3 mb-3">
                     <div>
                       <label className="text-xs text-gray-500 block mb-1">Namn</label>
@@ -146,10 +166,20 @@ function PersonalList() {
                 </td>
                 <td className="px-4 py-2 text-gray-400 text-xs font-mono">{p.personal_number}</td>
                 <td className="px-4 py-2 text-gray-300 text-xs">✎</td>
+                <td className="px-4 py-2 text-xs">
+                  {p.anonymized_at ? (
+                    <span className="text-gray-300">Anonymiserad</span>
+                  ) : canAnonymize && (
+                    <button onClick={e => anonymize(p, e)} disabled={anonymizing === p.id}
+                      className="text-red-400 hover:text-red-600 disabled:opacity-50 transition-colors">
+                      {anonymizing === p.id ? 'Anonymiserar…' : 'Anonymisera'}
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-6 text-center text-sm text-gray-400">Inga träffar</td></tr>
+              <tr><td colSpan={6} className="px-4 py-6 text-center text-sm text-gray-400">Inga träffar</td></tr>
             )}
           </tbody>
         </table>
