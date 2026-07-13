@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { CreateModal, SavaDaysEditor, calcSavaHours } from './Reports';
+import { CreateModal, EditReportModal, SavaDaysEditor, calcSavaHours, fmtDate } from './Reports';
 
 const STATUS_META = {
   ok:            { label:'Ok',            color:'bg-green-100 text-green-800'  },
@@ -21,11 +21,6 @@ function fmt(iso) {
   return new Date(iso).toLocaleDateString('sv-SE');
 }
 
-function fmtDate(val) {
-  // Handles both "2026-06-26" and "2026-06-26T00:00:00.000Z"
-  return (val || '').toString().slice(0, 10);
-}
-
 const TYPE_LABELS = {
   km_ers: 'Km-ersättning', utlagg: 'Utlägg', traktamente: 'Traktamente', sava: 'SÄVA',
 };
@@ -34,141 +29,6 @@ function reportTitle(r) {
   const typ = TYPE_LABELS[r.report_type] || 'Km-ersättning';
   const akt = r.activity_title || r.description || null;
   return akt ? `${typ} | ${akt}` : typ;
-}
-
-function EditReportModal({ report, onClose, onSaved }) {
-  const [activities, setActivities] = useState([]);
-  const [form, setForm] = useState({
-    report_type:         report.report_type         || 'km_ers',
-    activity_id:         report.activity_id         ? String(report.activity_id) : '',
-    description:         report.description         || '',
-    report_date:         fmtDate(report.report_date),
-    km:                  report.km                  || 0,
-    hours:               report.hours               || 0,
-    expenses:            report.expenses             || 0,
-    expense_description: report.expense_description || '',
-    sava_days:           report.sava_days            || [],
-  });
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => { api.activities().then(setActivities).catch(() => {}); }, []);
-
-  const useCalendar = form.activity_id !== '';
-  const isSava = form.report_type === 'sava';
-
-  async function submit(e) {
-    e.preventDefault();
-    if (!useCalendar && !form.description.trim()) {
-      alert('Ange vad redovisningen avser.'); return;
-    }
-    if (isSava && form.sava_days.length === 0) {
-      alert('Lägg till minst en dag.'); return;
-    }
-    const hours = isSava ? calcSavaHours(form.sava_days) : (form.hours || 0);
-    const report_date = isSava && form.sava_days.length > 0
-      ? form.sava_days[0].date
-      : form.report_date;
-    setSaving(true);
-    try {
-      await api.updateReport(report.id, {
-        ...form, hours, report_date,
-        activity_id: form.activity_id || null,
-        sava_days: isSava ? form.sava_days : null,
-      });
-      onSaved();
-    } catch(err) { alert(err.message); }
-    finally { setSaving(false); }
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="font-semibold text-military-navy">Redigera redovisning</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg">✕</button>
-        </div>
-        <form onSubmit={submit} className="px-6 py-4 space-y-3">
-          <div>
-            <label className="text-xs text-gray-500 block mb-1">Ersättningstyp</label>
-            <select required value={form.report_type}
-                    onChange={e => setForm(f=>({...f, report_type: e.target.value, sava_days: []}))}
-                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-military-steel">
-              <option value="km_ers">Km-ersättning</option>
-              <option value="utlagg">Utlägg</option>
-              <option value="sava">SÄVA (tid)</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-xs text-gray-500 block mb-1">Aktivitet</label>
-            <select value={form.activity_id}
-                    onChange={e => setForm(f=>({...f, activity_id: e.target.value, description: ''}))}
-                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-military-steel">
-              <option value="">Övrigt (ange nedan)</option>
-              {activities.map(a => <option key={a.id} value={String(a.id)}>{a.title}</option>)}
-            </select>
-          </div>
-          {!useCalendar && (
-            <div>
-              <label className="text-xs text-gray-500 block mb-1">Vad avser redovisningen?</label>
-              <input required value={form.description}
-                     onChange={e => setForm(f=>({...f, description: e.target.value}))}
-                     placeholder="t.ex. Förrådsbesök, Säkerhetsintervju…"
-                     className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-military-steel" />
-            </div>
-          )}
-          {isSava ? (
-            <SavaDaysEditor
-              days={form.sava_days}
-              onChange={days => setForm(f => ({ ...f, sava_days: days }))}
-            />
-          ) : (
-            <>
-              <div>
-                <label className="text-xs text-gray-500 block mb-1">Datum</label>
-                <input type="date" required value={form.report_date}
-                       onChange={e => setForm(f=>({...f, report_date: e.target.value}))}
-                       className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none" />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {form.report_type === 'km_ers' && (
-                  <div>
-                    <label className="text-xs text-gray-500 block mb-1">Km</label>
-                    <input type="number" min="0" value={form.km}
-                           onChange={e => setForm(f=>({...f, km: e.target.value}))}
-                           className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none" />
-                  </div>
-                )}
-                {form.report_type === 'utlagg' && (
-                  <div>
-                    <label className="text-xs text-gray-500 block mb-1">Belopp (kr)</label>
-                    <input type="number" min="0" step="0.01" value={form.expenses}
-                           onChange={e => setForm(f=>({...f, expenses: e.target.value}))}
-                           className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none" />
-                  </div>
-                )}
-              </div>
-              {form.report_type === 'utlagg' && (
-                <div>
-                  <label className="text-xs text-gray-500 block mb-1">Notering</label>
-                  <input placeholder="t.ex. Utlägg för lunch, parkeringsavgift…"
-                         value={form.expense_description}
-                         onChange={e => setForm(f=>({...f, expense_description: e.target.value}))}
-                         className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-military-steel" />
-                </div>
-              )}
-            </>
-          )}
-
-          <div className="flex gap-2 pt-1">
-            <button type="button" onClick={onClose} className="btn-secondary flex-1">Avbryt</button>
-            <button type="submit" disabled={saving} className="btn-primary flex-1">
-              {saving ? 'Sparar…' : 'Spara'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
 }
 
 function StartInventoryModal({ onConfirm, onClose }) {
