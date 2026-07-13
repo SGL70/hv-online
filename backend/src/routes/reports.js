@@ -1,7 +1,7 @@
 const express = require('express');
 const XLSX = require('xlsx');
 const { pool, getSubtreeIds } = require('../db/index');
-const { requireAuth, requireRole } = require('../middleware/auth');
+const { requireAuth, requireRole, ROLE_LEVEL } = require('../middleware/auth');
 const email = require('../services/email');
 
 const TYPE_LABEL = { km_ers:'Km-ersättning', utlagg:'Utlägg', traktamente:'Traktamente', sava:'SÄVA' };
@@ -23,16 +23,8 @@ router.get('/', async (req, res) => {
   const { filter } = req.query; // 'mine' | 'review' | 'approve'
   let query, params;
 
-  if (filter === 'review') {
-    // PC: submitted reports from my unit
-    const ids = await getSubtreeIds(req.user.org_unit_id);
-    query = `SELECT r.*, u.name AS user_name, a.title AS activity_title FROM reports r
-             JOIN users u ON u.id = r.user_id
-             LEFT JOIN activities a ON a.id = r.activity_id
-             WHERE r.status='submitted' AND u.org_unit_id = ANY($1) AND r.user_id != $2
-             ORDER BY r.report_date DESC`;
-    params = [ids, req.user.id];
-  } else if (filter === 'approve') {
+  if (filter === 'approve') {
+    // PC (eller högre): submitted + reviewed rapporter från min enhet, redo att attesteras
     const TOP_ROLES = ['batCh', 's4', 'stab'];
     let ids;
     if (TOP_ROLES.includes(req.user.role)) {
@@ -44,7 +36,7 @@ router.get('/', async (req, res) => {
     query = `SELECT r.*, u.name AS user_name, a.title AS activity_title FROM reports r
              JOIN users u ON u.id = r.user_id
              LEFT JOIN activities a ON a.id = r.activity_id
-             WHERE r.status='reviewed' AND u.org_unit_id = ANY($1) AND r.user_id != $2
+             WHERE r.status IN ('submitted','reviewed') AND u.org_unit_id = ANY($1) AND r.user_id != $2
              ORDER BY r.report_date DESC`;
     params = [ids, req.user.id];
   } else if (filter === 'approved') {
@@ -67,33 +59,21 @@ router.get('/', async (req, res) => {
     params = [req.user.id];
   }
 
-  // Always include activity_title for review/approve queries too
-  if (filter === 'review' || filter === 'approve') {
-    query = query.replace(
-      'SELECT r.*, u.name AS user_name FROM reports r',
-      'SELECT r.*, u.name AS user_name, a.title AS activity_title FROM reports r LEFT JOIN activities a ON a.id = r.activity_id'
-    );
-  }
-
   const result = await pool.query(query, params);
   res.json(result.rows);
 });
 
 // GET /api/reports/pending-count — badge counts for nav (must be before /:id)
 router.get('/pending-count', async (req, res) => {
-  if (!req.user.org_unit_id) return res.json({ review: 0, approve: 0 });
+  if (!req.user.org_unit_id) return res.json({ approve: 0 });
   const ids = await getSubtreeIds(req.user.org_unit_id);
   const r = req.user.role;
-  const canReview  = ['pc','kompc','kvm','s4','batCh','stab'].includes(r);
-  const canApprove = ['kompc','kvm','s4','batCh','stab'].includes(r);
+  const canApprove = (ROLE_LEVEL[r] ?? -1) >= ROLE_LEVEL.pc;
   const canCases   = ['kompc','kvm','s4','batCh','stab'].includes(r);
 
-  const [rev, appr, ret, cas] = await Promise.all([
-    canReview
-      ? pool.query(`SELECT COUNT(*) FROM reports r JOIN users u ON u.id=r.user_id WHERE r.status='submitted' AND u.org_unit_id=ANY($1)`, [ids])
-      : { rows:[{count:0}] },
+  const [appr, ret, cas] = await Promise.all([
     canApprove
-      ? pool.query(`SELECT COUNT(*) FROM reports r JOIN users u ON u.id=r.user_id WHERE r.status='reviewed' AND u.org_unit_id=ANY($1)`, [ids])
+      ? pool.query(`SELECT COUNT(*) FROM reports r JOIN users u ON u.id=r.user_id WHERE r.status IN ('submitted','reviewed') AND u.org_unit_id=ANY($1)`, [ids])
       : { rows:[{count:0}] },
     pool.query(`SELECT COUNT(*) FROM reports WHERE user_id=$1 AND status='returned'`, [req.user.id]),
     canCases
@@ -101,18 +81,17 @@ router.get('/pending-count', async (req, res) => {
       : { rows:[{count:0}] },
   ]);
   res.json({
-    review:   Number(rev.rows[0].count),
     approve:  Number(appr.rows[0].count),
     returned: Number(ret.rows[0].count),
     cases:    Number(cas.rows[0].count),
   });
 });
 
-// GET /api/reports/export — Excel-export av attesterade rapporter (kompc+)
+// GET /api/reports/export — Excel-export av attesterade rapporter (pc+)
 // ?from=YYYY-MM-DD &to=YYYY-MM-DD &mark=1 (markera som skickade till MR)
 // Skriver medvetet u.personal_number (inte hv_id) — redovisningen går vidare
 // till MR-gruppen HR som identifierar soldater på riktigt personnummer.
-router.get('/export', requireRole('kompc'), async (req, res) => {
+router.get('/export', requireRole('pc'), async (req, res) => {
   const { from, to, mark } = req.query;
   const ids = await getSubtreeIds(req.user.org_unit_id);
 
@@ -176,7 +155,7 @@ router.get('/export', requireRole('kompc'), async (req, res) => {
 });
 
 // POST /api/reports/mark-mr — markera enskilda rapporter som skickade till MR
-router.post('/mark-mr', requireRole('kompc'), async (req, res) => {
+router.post('/mark-mr', requireRole('pc'), async (req, res) => {
   const { ids } = req.body;
   if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: 'ids required' });
   await pool.query(`UPDATE reports SET mr_submitted_at = NOW() WHERE id = ANY($1)`, [ids]);
@@ -248,31 +227,39 @@ router.post('/:id/submit', async (req, res) => {
   }).catch(e => console.error('[notify submit]', e.message));
 });
 
-// POST /api/reports/batch-review — PC godkänner flera rapporter på en gång
-router.post('/batch-review', requireRole('pc'), async (req, res) => {
-  const { ids } = req.body;
+// POST /api/reports/batch-approve — attestera flera rapporter samtidigt (pc+)
+router.post('/batch-approve', requireRole('pc'), async (req, res) => {
+  const { ids } = req.body; // [reportId, ...]
   if (!Array.isArray(ids) || !ids.length) return res.status(400).json({ error: 'ids required' });
   const result = await pool.query(
-    `UPDATE reports SET status='reviewed', reviewed_by=$1, reviewed_at=NOW(), updated_at=NOW()
-     WHERE id = ANY($2) AND status='submitted' RETURNING id`,
+    `UPDATE reports SET status='approved', reviewer_comment=NULL,
+       reviewed_by=COALESCE(reviewed_by,$1), reviewed_at=COALESCE(reviewed_at,NOW()),
+       approved_by=$1, approved_at=NOW(), updated_at=NOW()
+     WHERE id = ANY($2) AND status IN ('submitted','reviewed') RETURNING id`,
     [req.user.id, ids]
   );
-  res.json({ reviewed: result.rows.length });
+  res.json({ approved: result.rows.length });
 });
 
-// POST /api/reports/:id/review — PC reviews (approve/return)
-router.post('/:id/review', requireRole('pc'), async (req, res) => {
+// POST /api/reports/:id/approve — PC (eller högre) attesterar eller returnerar en rapport.
+// reviewed_by/reviewed_at bevaras om redan satta (t.ex. via /report-attendance),
+// annars stämplas den attesterande som granskare också.
+router.post('/:id/approve', requireRole('pc'), async (req, res) => {
   const { action, comment } = req.body;
-  const newStatus = action === 'approve' ? 'reviewed' : 'returned';
   const result = await pool.query(
-    `UPDATE reports SET status=$1, reviewer_comment=$2, reviewed_by=$3, reviewed_at=NOW(), updated_at=NOW()
-     WHERE id=$4 AND status='submitted' RETURNING *`,
-    [newStatus, comment || null, req.user.id, req.params.id]
+    action === 'approve'
+      ? `UPDATE reports SET status='approved', reviewer_comment=NULL,
+           reviewed_by=COALESCE(reviewed_by,$1), reviewed_at=COALESCE(reviewed_at,NOW()),
+           approved_by=$1, approved_at=NOW(), updated_at=NOW()
+         WHERE id=$2 AND status IN ('submitted','reviewed') RETURNING *`
+      : `UPDATE reports SET status='returned', reviewer_comment=$1,
+           reviewed_by=COALESCE(reviewed_by,$2), reviewed_at=COALESCE(reviewed_at,NOW()), updated_at=NOW()
+         WHERE id=$3 AND status IN ('submitted','reviewed') RETURNING *`,
+    action === 'approve' ? [req.user.id, req.params.id] : [comment || null, req.user.id, req.params.id]
   );
   if (!result.rows.length) return res.status(403).json({ error: 'Not allowed' });
   res.json(result.rows[0]);
 
-  // Notifiera soldaten
   pool.query('SELECT email FROM users WHERE id=$1', [result.rows[0].user_id])
     .then(async u => {
       if (!u.rows.length) return;
@@ -280,47 +267,10 @@ router.post('/:id/review', requireRole('pc'), async (req, res) => {
       const act = r.activity_id
         ? await pool.query('SELECT title FROM activities WHERE id=$1', [r.activity_id])
         : null;
-      email.notifyReportReviewed(u.rows[0].email, action,
-        await reportInfo(r, act?.rows[0]?.title));
-    }).catch(e => console.error('[notify review]', e.message));
-});
-
-// POST /api/reports/:id/approve — KompCh attests
-// POST /api/reports/batch-approve — attest multiple reports at once (kompc+)
-router.post('/batch-approve', requireRole('kompc'), async (req, res) => {
-  const { ids } = req.body; // [reportId, ...]
-  if (!Array.isArray(ids) || !ids.length) return res.status(400).json({ error: 'ids required' });
-  const result = await pool.query(
-    `UPDATE reports SET status='approved', approved_by=$1, approved_at=NOW(), updated_at=NOW()
-     WHERE id = ANY($2) AND status='reviewed' RETURNING id`,
-    [req.user.id, ids]
-  );
-  res.json({ approved: result.rows.length });
-});
-
-router.post('/:id/approve', requireRole('kompc'), async (req, res) => {
-  const { action } = req.body;
-  const newStatus = action === 'approve' ? 'approved' : 'submitted';
-  const result = await pool.query(
-    `UPDATE reports SET status=$1, approved_by=$2, approved_at=NOW(), updated_at=NOW()
-     WHERE id=$3 AND status='reviewed' RETURNING *`,
-    [newStatus, req.user.id, req.params.id]
-  );
-  if (!result.rows.length) return res.status(403).json({ error: 'Not allowed' });
-  res.json(result.rows[0]);
-
-  if (action === 'approve') {
-    pool.query('SELECT email FROM users WHERE id=$1', [result.rows[0].user_id])
-      .then(async u => {
-        if (!u.rows.length) return;
-        const r = result.rows[0];
-        const act = r.activity_id
-          ? await pool.query('SELECT title FROM activities WHERE id=$1', [r.activity_id])
-          : null;
-        email.notifyReportApproved(u.rows[0].email,
-          await reportInfo(r, act?.rows[0]?.title));
-      }).catch(e => console.error('[notify approve]', e.message));
-  }
+      const info = await reportInfo(r, act?.rows[0]?.title);
+      if (action === 'approve') await email.notifyReportApproved(u.rows[0].email, info);
+      else await email.notifyReportReturned(u.rows[0].email, info);
+    }).catch(e => console.error('[notify approve]', e.message));
 });
 
 module.exports = router;

@@ -321,10 +321,6 @@ export default function Reports() {
     await api.submitReport(id).catch(e => alert(e.message));
     load();
   }
-  async function review(id, action) {
-    await api.reviewReport(id, action).catch(e => alert(e.message));
-    load();
-  }
   async function approve(id, action) {
     await api.approveReport(id, action).catch(e => alert(e.message));
     load();
@@ -332,8 +328,7 @@ export default function Reports() {
 
   const tabs = [
     ['mine',    'Mina'],
-    ...(hasRole('pc')    ? [['review',  'Granska']]   : []),
-    ...(hasRole('kompc') ? [['approve', 'Attestera']] : []),
+    ...(hasRole('pc') ? [['approve', 'Attestera']] : []),
   ];
 
   return (
@@ -391,14 +386,6 @@ export default function Reports() {
                               className="text-xs bg-military-navy text-white px-3 py-1 rounded hover:bg-[#16294a]">
                         Skicka in
                       </button>
-                    )}
-                    {tab === 'review' && (
-                      <>
-                        <button onClick={() => review(r.id,'approve')}
-                                className="text-xs bg-green-600 text-white px-3 py-1 rounded">Godkänn</button>
-                        <button onClick={() => review(r.id,'return')}
-                                className="text-xs bg-gray-200 text-gray-600 px-3 py-1 rounded">Returnera</button>
-                      </>
                     )}
                     {tab === 'approve' && (
                       <>

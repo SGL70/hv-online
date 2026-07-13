@@ -83,9 +83,7 @@ export const api = {
   createReport:    (data)     => api.post('/reports', data),
   updateReport:    (id, data) => api.put(`/reports/${id}`, data),
   submitReport:    (id)       => api.post(`/reports/${id}/submit`),
-  reviewReport:    (id, action, comment) => api.post(`/reports/${id}/review`, { action, comment }),
-  batchReview:     (ids)        => api.post('/reports/batch-review', { ids }),
-  approveReport:   (id, action) => api.post(`/reports/${id}/approve`, { action }),
+  approveReport:   (id, action, comment) => api.post(`/reports/${id}/approve`, { action, comment }),
   batchApprove:    (ids)        => api.post('/reports/batch-approve', { ids }),
 
   // Equipment

@@ -103,7 +103,7 @@ export default function Layout({ children }) {
 
   useEffect(() => {
     api.pendingCount()
-      .then(c => setPendingBadge((c.review || 0) + (c.approve || 0) + (c.returned || 0) + (c.cases || 0)))
+      .then(c => setPendingBadge((c.approve || 0) + (c.returned || 0) + (c.cases || 0)))
       .catch(() => {});
   }, [user?.id]);
 

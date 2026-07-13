@@ -42,8 +42,8 @@ async function notifyReportSubmitted(submitter, reviewerEmail, reportInfo) {
   const { typ, aktivitet, datum } = reportInfo;
   await send(
     reviewerEmail,
-    `Nytt ärende för granskning — ${submitter.name}`,
-    wrap(`<h2 style="color:#1d3557;margin-top:0">Nytt ärende att granska</h2>
+    `Nytt ärende att attestera — ${submitter.name}`,
+    wrap(`<h2 style="color:#1d3557;margin-top:0">Nytt ärende att attestera</h2>
       <p><strong>${submitter.name}</strong> har skickat in ett ärende.</p>
       <table style="font-size:14px;border-collapse:collapse">
         <tr><td style="color:#666;padding:3px 12px 3px 0">Typ</td><td><strong>${typ}</strong></td></tr>
@@ -53,17 +53,13 @@ async function notifyReportSubmitted(submitter, reviewerEmail, reportInfo) {
   );
 }
 
-// Rapport granskad → notifiera soldaten
-async function notifyReportReviewed(soldatEmail, action, reportInfo) {
+// Rapport returnerad → notifiera soldaten
+async function notifyReportReturned(soldatEmail, reportInfo) {
   const { typ, aktivitet, datum, comment } = reportInfo;
-  const approved = action === 'approve';
-  const subject = approved
-    ? `Ditt ärende är granskat — ${typ}`
-    : `Ditt ärende har avfärdats — ${typ}`;
   await send(
-    soldatEmail, subject,
-    wrap(`<h2 style="color:#1d3557;margin-top:0">${approved ? 'Ärende granskat' : 'Ärende avfärdat'}</h2>
-      <p>Din redovisning har ${approved ? 'godkänts av plutonchef och väntar på attest' : 'avfärdats av plutonchef'}.</p>
+    soldatEmail, `Ditt ärende har avfärdats — ${typ}`,
+    wrap(`<h2 style="color:#1d3557;margin-top:0">Ärende avfärdat</h2>
+      <p>Din redovisning har avfärdats och skickats tillbaka till dig.</p>
       <table style="font-size:14px;border-collapse:collapse">
         <tr><td style="color:#666;padding:3px 12px 3px 0">Typ</td><td><strong>${typ}</strong></td></tr>
         <tr><td style="color:#666;padding:3px 12px 3px 0">Avser</td><td>${aktivitet}</td></tr>
@@ -80,7 +76,7 @@ async function notifyReportApproved(soldatEmail, reportInfo) {
     soldatEmail,
     `Ditt ärende är attesterat — ${typ}`,
     wrap(`<h2 style="color:#1d3557;margin-top:0">Ärende attesterat</h2>
-      <p>Din redovisning har attesterats och är klar för utbetalning.</p>
+      <p>Din redovisning har attesterats och skickas vidare till MR-gruppen för utbetalning.</p>
       <table style="font-size:14px;border-collapse:collapse">
         <tr><td style="color:#666;padding:3px 12px 3px 0">Typ</td><td><strong>${typ}</strong></td></tr>
         <tr><td style="color:#666;padding:3px 12px 3px 0">Avser</td><td>${aktivitet}</td></tr>
@@ -151,7 +147,7 @@ async function notifyEquipmentDecided(soldatEmail, action, itemName, comment) {
 
 module.exports = {
   notifyReportSubmitted,
-  notifyReportReviewed,
+  notifyReportReturned,
   notifyReportApproved,
   notifyInventoryStarted,
   notifyNewActivity,

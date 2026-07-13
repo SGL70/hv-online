@@ -208,7 +208,6 @@ export default function Arenden() {
   const [cases,         setCases]         = useState([]);
   const [afseHistory,   setAfseHistory]   = useState([]);
   const [myReports,       setMyReports]       = useState([]);
-  const [reviewReports,   setReviewReports]   = useState([]);
   const [approveReports,  setApproveReports]  = useState([]);
   const [approvedHistory, setApprovedHistory] = useState([]);
   const [showHistory,     setShowHistory]     = useState(false);
@@ -224,9 +223,8 @@ export default function Arenden() {
 
   function load() {
     api.reports().then(setMyReports).catch(() => {});
-    if (hasRole('pc'))    api.reports('review')  .then(setReviewReports)   .catch(() => {});
-    if (hasRole('kompc')) api.reports('approve') .then(setApproveReports)  .catch(() => {});
-    if (hasRole('kompc')) api.reports('approved').then(setApprovedHistory) .catch(() => {});
+    if (hasRole('pc')) api.reports('approve') .then(setApproveReports)  .catch(() => {});
+    if (hasRole('pc')) api.reports('approved').then(setApprovedHistory) .catch(() => {});
     if (isLogistics()) {
       api.unitInventory().then(setUnitInv).catch(() => {});
       api.pendingCases().then(setCases).catch(() => {});
@@ -357,77 +355,8 @@ export default function Arenden() {
         )}
       </section>
 
-      {/* ─── ATT GRANSKA (pc+) ───────────────────────────────── */}
-      {hasRole('pc') && reviewReports.length > 0 && (
-        <section>
-          <div className="space-y-5">
-            {(() => {
-              const typeKey   = r => r.report_type === 'sava' ? 'sava' : r.expenses > 0 && !r.km ? 'utlagg' : 'km';
-              const typeLabel = { sava: 'Granska SÄVA', km: 'Granska Km-ersättning', utlagg: 'Granska Utlägg' };
-              const typeOrder = ['sava', 'km', 'utlagg'];
-
-              const byType = {};
-              reviewReports.forEach(r => {
-                const tk = typeKey(r);
-                const ak = r.activity_id ? `act-${r.activity_id}` : 'other';
-                if (!byType[tk]) byType[tk] = {};
-                if (!byType[tk][ak]) byType[tk][ak] = { label: r.activity_title || 'Utan kopplad aktivitet', reports: [] };
-                byType[tk][ak].reports.push(r);
-              });
-
-              return typeOrder.filter(tk => byType[tk]).map(tk => (
-                <div key={tk}>
-                  <h2 className="text-sm font-semibold text-gray-700 mb-2">{typeLabel[tk]}</h2>
-                  <div className="space-y-2">
-                    {Object.entries(byType[tk]).map(([ak, g]) => (
-                      <div key={ak} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                        <div className="px-5 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                          <span className="text-xs font-semibold text-gray-600">{g.label} · {g.reports.length} pers</span>
-                          {g.reports.length > 1 && (
-                            <button
-                              onClick={() => api.batchReview(g.reports.map(r => r.id)).then(load).catch(e => alert(e.message))}
-                              className="text-xs px-2.5 py-1 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 font-medium">
-                              Godkänn alla ({g.reports.length})
-                            </button>
-                          )}
-                        </div>
-                        <ul className="divide-y divide-gray-100">
-                          {g.reports.map(r => (
-                            <li key={r.id} className="px-5 py-2.5 flex items-center justify-between gap-3">
-                              <div className="flex-1 min-w-0">
-                                <div className="text-sm text-gray-900">{r.user_name}</div>
-                                <div className="text-xs text-gray-400">
-                                  {fmtDate(r.report_date)}
-                                  {r.km > 0       && <span className="ml-2">{r.km} km</span>}
-                                  {r.hours > 0    && <span className="ml-2">{r.hours} tim</span>}
-                                  {r.expenses > 0 && <span className="ml-2">{Number(r.expenses).toFixed(0)} kr</span>}
-                                </div>
-                              </div>
-                              <div className="flex gap-2 shrink-0">
-                                <button onClick={() => api.reviewReport(r.id, 'approve').then(load).catch(e => alert(e.message))}
-                                        className="text-xs px-2.5 py-1 bg-green-100 text-green-800 rounded-lg hover:bg-green-200">
-                                  Godkänn
-                                </button>
-                                <button onClick={() => { setReturnTarget(r.id); setReturnComment(''); }}
-                                        className="text-xs px-2.5 py-1 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200">
-                                  Avfärda
-                                </button>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ));
-            })()}
-          </div>
-        </section>
-      )}
-
-      {/* ─── ATT ATTESTERA (kompc+) ──────────────────────────── */}
-      {hasRole('kompc') && (
+      {/* ─── ATT ATTESTERA (pc+) ──────────────────────────── */}
+      {hasRole('pc') && (
         <section>
           {approveReports.length === 0 ? (
             <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 text-sm text-gray-400">
@@ -482,7 +411,7 @@ export default function Arenden() {
                                           className="text-xs px-2.5 py-1 bg-green-100 text-green-800 rounded-lg hover:bg-green-200">
                                     Attestera
                                   </button>
-                                  <button onClick={() => api.approveReport(r.id, 'return').then(load).catch(e => alert(e.message))}
+                                  <button onClick={() => { setReturnTarget(r.id); setReturnComment(''); }}
                                           className="text-xs px-2.5 py-1 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200">
                                     Returnera
                                   </button>
@@ -737,7 +666,7 @@ export default function Arenden() {
                   onClick={() => {
                     const initials = (user?.name || '').split(' ').map(w => w[0]).join('').toUpperCase();
                     const comment = returnComment.trim() + (initials ? ` /${initials}` : '');
-                    api.reviewReport(returnTarget, 'return', comment)
+                    api.approveReport(returnTarget, 'return', comment)
                       .then(() => { setReturnTarget(null); load(); })
                       .catch(e => alert(e.message));
                   }}
