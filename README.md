@@ -2,7 +2,7 @@
 
 ![HvOnline](preview.png)
 
-Självhostad prototyp av ett digitalt administrativt stödsystem för Hemvärnets kompani- och bataljonsförband. Syftet är att ersätta manuella processer (Excel-listor, pappersblanketter, e-post) med ett modernt webbgränssnitt anpassat för Hemvärnets organisationsstruktur och roller.
+Ett digitalt administrativt stödsystem för Hemvärnets kompani- och bataljonsförband. Syftet är att enkelt sprida information och ersätta manuella processer (Excel-listor, pappersblanketter, e-post) med ett modernt webbgränssnitt anpassat för Hemvärnets organisationsstruktur och roller. 
 
 > **Status:** Aktiv prototyp — funktionell men inte produktionsklar. BankID-integration implementerad och testad (se `bankid`-branch). E-postnotifieringar via Resend. Publikt tillgänglig via Cloudflare Tunnel (https://hvonline.se).
 
